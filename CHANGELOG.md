@@ -6,14 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.1.7] - 2025-07-07
+
+### Changed
+- Refactored `PincodeData` methods (`get_state`, `get_district`, `get_taluk`, `get_offices`) to use a common helper method `_get_info_field` for improved code reusability and maintainability.
+- Ensured type hint compatibility with `mypy` by explicitly casting return types where necessary.
+
+### Technical Improvements
+- Implemented `lru_cache` for `_get_default_instance` to ensure `PincodeData` is a singleton and loaded only once, optimizing performance for repeated calls to convenience functions.
+- Removed redundant global variable `_default_pincode_data` for a cleaner and more minimal codebase, leveraging `lru_cache` for instance management.
+- Removed duplicate import statements (`os`, `re`).
+
 ## [0.1.6] - 2025-01-04
 
 ### Added
 - **Complete rewrite with modern Python practices**
 - Repo links changed
 - Author added
-
-## [0.1.6] - 2025-01-04
 
 ### Added
 - **Complete rewrite with modern Python practices**

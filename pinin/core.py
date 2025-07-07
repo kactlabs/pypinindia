@@ -4,6 +4,7 @@ Core functionality for Indian pincode data lookup and management.
 
 import os
 import re
+from functools import lru_cache
 from typing import Dict, List, Optional, Union, Any
 import pandas as pd
 
@@ -101,6 +102,15 @@ class PincodeData:
         
         return pincode_str
     
+    def _get_info_field(self, pincode: Union[str, int], field_name: str) -> Union[str, List[str]]:
+        """
+        Helper to get a specific field or list of fields for a pincode.
+        """
+        info = self.get_pincode_info(pincode)
+        if field_name == 'officename':
+            return [str(office[field_name]) for office in info]
+        return str(info[0][field_name])
+
     def get_pincode_info(self, pincode: Union[str, int]) -> List[Dict[str, Any]]:
         """
         Get complete information for a pincode.
@@ -144,8 +154,7 @@ class PincodeData:
             InvalidPincodeError: If pincode format is invalid
             DataNotFoundError: If no data found for the pincode
         """
-        info = self.get_pincode_info(pincode)
-        return str(info[0]['statename'])
+        return str(self._get_info_field(pincode, 'statename'))
     
     def get_district(self, pincode: Union[str, int]) -> str:
         """
@@ -161,8 +170,7 @@ class PincodeData:
             InvalidPincodeError: If pincode format is invalid
             DataNotFoundError: If no data found for the pincode
         """
-        info = self.get_pincode_info(pincode)
-        return str(info[0]['districtname'])
+        return str(self._get_info_field(pincode, 'districtname'))
     
     def get_taluk(self, pincode: Union[str, int]) -> str:
         """
@@ -178,8 +186,7 @@ class PincodeData:
             InvalidPincodeError: If pincode format is invalid
             DataNotFoundError: If no data found for the pincode
         """
-        info = self.get_pincode_info(pincode)
-        return str(info[0]['taluk'])
+        return str(self._get_info_field(pincode, 'taluk'))
     
     def get_offices(self, pincode: Union[str, int]) -> List[str]:
         """
@@ -195,8 +202,7 @@ class PincodeData:
             InvalidPincodeError: If pincode format is invalid
             DataNotFoundError: If no data found for the pincode
         """
-        info = self.get_pincode_info(pincode)
-        return [office['officename'] for office in info]
+        return self._get_info_field(pincode, 'officename') # type: ignore
     
     def search_by_state(self, state_name: str) -> List[str]:
         """
@@ -316,16 +322,10 @@ class PincodeData:
         }
 
 
-# Global instance for convenience functions
-_default_pincode_data: Optional[PincodeData] = None
-
-
+@lru_cache(maxsize=1)
 def _get_default_instance() -> PincodeData:
     """Get or create the default PincodeData instance."""
-    global _default_pincode_data
-    if _default_pincode_data is None:
-        _default_pincode_data = PincodeData()
-    return _default_pincode_data
+    return PincodeData()
 
 
 # Convenience functions

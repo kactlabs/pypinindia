@@ -7,6 +7,8 @@ A modern Python library for Indian pincode lookup and geographical information.
 
 ## Features
 
+- **Optimized Performance**: Utilizes `lru_cache` for efficient singleton instance management, ensuring faster lookups.
+- **Refactored Codebase**: Improved internal code structure with helper methods for better maintainability and reduced duplication.
 - **Comprehensive Pincode Database**: Complete Indian pincode data with office information
 - **Multiple Lookup Methods**: Search by pincode, state, district, or office name
 - **Modern Python API**: Clean, type-hinted interface with both functional and object-oriented approaches
@@ -337,13 +339,19 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## Changelog
 
+### v0.1.7
+- **Performance Enhancement**: Implemented `lru_cache` for `_get_default_instance` to ensure `PincodeData` is a singleton and loaded only once, optimizing performance for repeated calls to convenience functions.
+- **Code Refactoring**: Refactored `PincodeData` methods (`get_state`, `get_district`, `get_taluk`, `get_offices`) to use a common helper method `_get_info_field` for improved code reusability and maintainability.
+- **Code Clean-up**: Removed redundant global variable `_default_pincode_data` and duplicate import statements (`os`, `re`).
+- **Type Hinting**: Ensured type hint compatibility with `mypy` by explicitly casting return types where necessary.
+
 ### v0.1.6
 - **Complete rewrite with modern Python practices**
 - Added comprehensive API with both functional and OOP interfaces
 - Added full CLI tool with extensive options
 - Added comprehensive test suite with high coverage
 - Added type hints throughout the codebase
-- Added proper exception handling cwith custom exceptions
+- Added proper exception handling with custom exceptions
 - Added search functionality by state, district, and office name
 - Added statistics and data exploration features
 - Added examples and comprehensive documentation

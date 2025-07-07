@@ -248,6 +248,20 @@ class TestConvenienceFunctions:
         result = get_pincode_info("110001")
         assert result == mock_info
         mock_instance.get_pincode_info.assert_called_once_with("110001")
+    
+    @patch('pinin.core.PincodeData')
+    def test_get_default_instance_singleton(self, MockPincodeData):
+        """Test that _get_default_instance returns a singleton."""
+        from pinin.core import _get_default_instance
+        
+        # Clear the cache to ensure a fresh instance is created
+        _get_default_instance.cache_clear()
+        
+        instance1 = _get_default_instance()
+        instance2 = _get_default_instance()
+        
+        assert instance1 is instance2
+        MockPincodeData.assert_called_once()
 
 
 class TestStatistics:
