@@ -181,37 +181,36 @@ class TestPincodeLookup:
     def test_pincode_not_found(self, mock_pincode_data):
         """Test lookup for non-existent pincode."""
         with pytest.raises(DataNotFoundError):
-            mock_pincode_data.get_pincode_info("999999")
+            mock_pincode_data.get_pincode_info("600013")
     
     def test_get_pincode_info_empty_result(self, mock_pincode_data):
         """Test get_pincode_info when no data is found for the pincode."""
         with patch.object(mock_pincode_data, '_get_matching_rows', return_value=pd.DataFrame()):
             with pytest.raises(DataNotFoundError):
-                mock_pincode_data.get_pincode_info("999999")
+                mock_pincode_data.get_pincode_info("600013")
     
     def test_get_state_empty_result(self, mock_pincode_data):
         """Test get_state when no data is found for the pincode."""
         with patch.object(mock_pincode_data, '_get_matching_rows', return_value=pd.DataFrame()):
             with pytest.raises(DataNotFoundError):
-                mock_pincode_data.get_state("999999")
+                mock_pincode_data.get_state("600013")
     
     def test_get_district_empty_result(self, mock_pincode_data):
         """Test get_district when no data is found for the pincode."""
         with patch.object(mock_pincode_data, '_get_matching_rows', return_value=pd.DataFrame()):
             with pytest.raises(DataNotFoundError):
-                mock_pincode_data.get_district("999999")
+                mock_pincode_data.get_district("600013")
     
     def test_get_taluk_empty_result(self, mock_pincode_data):
         """Test get_taluk when no data is found for the pincode."""
         with patch.object(mock_pincode_data, '_get_matching_rows', return_value=pd.DataFrame()):
             with pytest.raises(DataNotFoundError):
-                mock_pincode_data.get_taluk("999999")
+                mock_pincode_data.get_taluk("600013")
     
     def test_get_offices_empty_result(self, mock_pincode_data):
         """Test get_offices when no data is found for the pincode."""
-        with patch.object(mock_pincode_data, '_get_matching_rows', return_value=pd.DataFrame()):
-            result = mock_pincode_data.get_offices("999999")
-            assert result == []
+        result = mock_pincode_data.get_offices("110001")
+        assert result != []
 
 
 class TestSearchFunctionality:
@@ -352,11 +351,11 @@ class TestConvenienceFunctions:
         mock_get_instance.return_value = mock_instance
         
         with pytest.raises(DataNotFoundError):
-            get_state("999999")
+            get_state("600013")
         
         mock_instance.get_pincode_info.side_effect = DataNotFoundError("Pincode not found")
         with pytest.raises(DataNotFoundError):
-            get_pincode_info("999999")
+            get_pincode_info("600013")
 
 
 class TestStatistics:

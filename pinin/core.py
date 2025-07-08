@@ -102,6 +102,12 @@ class PincodeData:
         
         return pincode_str
     
+    def _get_matching_rows(self, pincode: str) -> pd.DataFrame:
+        """Get matching rows for a given pincode."""
+        if self.data is None:
+            raise DataLoadError("Data not loaded")
+        return self.data[self.data['pincode'] == pincode]
+
     def _get_info_field(self, pincode: Union[str, int], field_name: str) -> Union[str, List[str]]:
         """
         Helper to get a specific field or list of fields for a pincode.
@@ -132,7 +138,7 @@ class PincodeData:
         pincode_str = self._validate_pincode(pincode)
         
         # Filter data for the given pincode
-        filtered_data = self.data[self.data['pincode'] == pincode_str]
+        filtered_data = self._get_matching_rows(pincode_str)
         
         if filtered_data.empty:
             raise DataNotFoundError(pincode_str)
@@ -154,8 +160,11 @@ class PincodeData:
             InvalidPincodeError: If pincode format is invalid
             DataNotFoundError: If no data found for the pincode
         """
-        return str(self._get_info_field(pincode, 'statename'))
-    
+        try:
+            return str(self._get_info_field(pincode, 'statename'))
+        except IndexError:
+            raise DataNotFoundError(f"Pincode {pincode} not found")
+
     def get_district(self, pincode: Union[str, int]) -> str:
         """
         Get the district name for a pincode.
@@ -170,8 +179,11 @@ class PincodeData:
             InvalidPincodeError: If pincode format is invalid
             DataNotFoundError: If no data found for the pincode
         """
-        return str(self._get_info_field(pincode, 'districtname'))
-    
+        try:
+            return str(self._get_info_field(pincode, 'districtname'))
+        except IndexError:
+            raise DataNotFoundError(f"Pincode {pincode} not found")
+
     def get_taluk(self, pincode: Union[str, int]) -> str:
         """
         Get the taluk name for a pincode.
@@ -186,8 +198,11 @@ class PincodeData:
             InvalidPincodeError: If pincode format is invalid
             DataNotFoundError: If no data found for the pincode
         """
-        return str(self._get_info_field(pincode, 'taluk'))
-    
+        try:
+            return str(self._get_info_field(pincode, 'taluk'))
+        except IndexError:
+            raise DataNotFoundError(f"Pincode {pincode} not found")
+
     def get_offices(self, pincode: Union[str, int]) -> List[str]:
         """
         Get all office names for a pincode.
@@ -202,8 +217,11 @@ class PincodeData:
             InvalidPincodeError: If pincode format is invalid
             DataNotFoundError: If no data found for the pincode
         """
-        return self._get_info_field(pincode, 'officename') # type: ignore
-    
+        try:
+            return self._get_info_field(pincode, 'officename') # type: ignore
+        except IndexError:
+            return []
+
     def search_by_state(self, state_name: str) -> List[str]:
         """
         Get all pincodes for a given state.
@@ -222,7 +240,7 @@ class PincodeData:
             self.data['statename'].str.upper() == state_name.upper()
         ]
         
-        return sorted(filtered_data['pincode'].unique().tolist())
+        return sorted(filtered_data['pincode'].unique().tolist()) if not filtered_data.empty else []
     
     def search_by_district(self, district_name: str, state_name: Optional[str] = None) -> List[str]:
         """
@@ -248,7 +266,7 @@ class PincodeData:
                 filtered_data['statename'].str.upper() == state_name.upper()
             ]
         
-        return sorted(filtered_data['pincode'].unique().tolist())
+        return sorted(filtered_data['pincode'].unique().tolist()) if not filtered_data.empty else []
     
     def search_by_office(self, office_name: str) -> List[Dict[str, Any]]:
         """
@@ -280,7 +298,7 @@ class PincodeData:
         if self.data is None:
             raise DataLoadError("Data not loaded")
         
-        return sorted(self.data['statename'].unique().tolist())
+        return sorted(self.data['statename'].unique().tolist()) if not self.data.empty else []
     
     def get_districts(self, state_name: Optional[str] = None) -> List[str]:
         """
@@ -299,9 +317,9 @@ class PincodeData:
             filtered_data = self.data[
                 self.data['statename'].str.upper() == state_name.upper()
             ]
-            return sorted(filtered_data['districtname'].unique().tolist())
+            return sorted(filtered_data['districtname'].unique().tolist()) if not filtered_data.empty else []
         
-        return sorted(self.data['districtname'].unique().tolist())
+        return sorted(self.data['districtname'].unique().tolist()) if not self.data.empty else []
     
     def get_statistics(self) -> Dict[str, int]:
         """
@@ -315,10 +333,10 @@ class PincodeData:
         
         return {
             'total_records': len(self.data),
-            'unique_pincodes': self.data['pincode'].nunique(),
-            'unique_states': self.data['statename'].nunique(),
-            'unique_districts': self.data['districtname'].nunique(),
-            'unique_offices': self.data['officename'].nunique(),
+            'unique_pincodes': self.data['pincode'].nunique() if not self.data.empty else 0,
+            'unique_states': self.data['statename'].nunique() if not self.data.empty else 0,
+            'unique_districts': self.data['districtname'].nunique() if not self.data.empty else 0,
+            'unique_offices': self.data['officename'].nunique() if not self.data.empty else 0,
         }
 
 
