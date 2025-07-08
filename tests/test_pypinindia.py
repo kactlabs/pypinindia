@@ -18,6 +18,7 @@ from pinin import (
     get_states,
     get_districts,
 )
+
 from pinin.exceptions import (
     InvalidPincodeError,
     DataNotFoundError,
@@ -57,6 +58,24 @@ class TestPincodeValidation:
         pincode_data = PincodeData()
         with pytest.raises(InvalidPincodeError):
             pincode_data._validate_pincode("11000A")
+    
+    def test_invalid_pincode_leading_zeros(self):
+        """Test invalid pincode - leading zeros."""
+        pincode_data = PincodeData()
+        with pytest.raises(InvalidPincodeError):
+            pincode_data._validate_pincode("00110001")
+    
+    def test_invalid_pincode_empty_string(self):
+        """Test invalid pincode - empty string."""
+        pincode_data = PincodeData()
+        with pytest.raises(InvalidPincodeError):
+            pincode_data._validate_pincode("")
+    
+    def test_invalid_pincode_whitespace(self):
+        """Test invalid pincode - contains whitespace."""
+        pincode_data = PincodeData()
+        with pytest.raises(InvalidPincodeError):
+            pincode_data._validate_pincode("11 0001")
 
 
 class TestPincodeDataLoading:
@@ -101,6 +120,13 @@ class TestPincodeDataLoading:
         """Test data loading when file doesn't exist."""
         with pytest.raises(DataLoadError):
             PincodeData("/nonexistent/file.csv")
+    
+    @patch('pandas.read_csv')
+    def test_data_loading_corrupted_file(self, mock_read_csv):
+        """Test data loading with a corrupted CSV file."""
+        mock_read_csv.side_effect = pd.errors.EmptyDataError("Empty CSV file")
+        with pytest.raises(DataLoadError):
+            PincodeData()
 
 
 class TestPincodeLookup:
@@ -156,6 +182,36 @@ class TestPincodeLookup:
         """Test lookup for non-existent pincode."""
         with pytest.raises(DataNotFoundError):
             mock_pincode_data.get_pincode_info("999999")
+    
+    def test_get_pincode_info_empty_result(self, mock_pincode_data):
+        """Test get_pincode_info when no data is found for the pincode."""
+        with patch.object(mock_pincode_data, '_get_matching_rows', return_value=pd.DataFrame()):
+            with pytest.raises(DataNotFoundError):
+                mock_pincode_data.get_pincode_info("999999")
+    
+    def test_get_state_empty_result(self, mock_pincode_data):
+        """Test get_state when no data is found for the pincode."""
+        with patch.object(mock_pincode_data, '_get_matching_rows', return_value=pd.DataFrame()):
+            with pytest.raises(DataNotFoundError):
+                mock_pincode_data.get_state("999999")
+    
+    def test_get_district_empty_result(self, mock_pincode_data):
+        """Test get_district when no data is found for the pincode."""
+        with patch.object(mock_pincode_data, '_get_matching_rows', return_value=pd.DataFrame()):
+            with pytest.raises(DataNotFoundError):
+                mock_pincode_data.get_district("999999")
+    
+    def test_get_taluk_empty_result(self, mock_pincode_data):
+        """Test get_taluk when no data is found for the pincode."""
+        with patch.object(mock_pincode_data, '_get_matching_rows', return_value=pd.DataFrame()):
+            with pytest.raises(DataNotFoundError):
+                mock_pincode_data.get_taluk("999999")
+    
+    def test_get_offices_empty_result(self, mock_pincode_data):
+        """Test get_offices when no data is found for the pincode."""
+        with patch.object(mock_pincode_data, '_get_matching_rows', return_value=pd.DataFrame()):
+            result = mock_pincode_data.get_offices("999999")
+            assert result == []
 
 
 class TestSearchFunctionality:
@@ -221,6 +277,31 @@ class TestSearchFunctionality:
         result = mock_search_data.get_districts("DELHI")
         assert len(result) == 1
         assert 'Central Delhi' in result
+    
+    def test_search_by_state_empty_result(self, mock_search_data):
+        """Test search_by_state when no data is found for the state."""
+        with patch.object(mock_search_data, '_get_matching_rows', return_value=pd.DataFrame()):
+            result = mock_search_data.search_by_state("NonExistentState")
+            assert len(result) == 0
+    
+    def test_search_by_district_empty_result(self, mock_search_data):
+        """Test search_by_district when no data is found for the district."""
+        with patch.object(mock_search_data, '_get_matching_rows', return_value=pd.DataFrame()):
+            result = mock_search_data.search_by_district("NonExistentDistrict")
+            assert len(result) == 0
+    
+    def test_get_states_empty_result(self, mock_search_data):
+        """Test get_states when the dataset is empty."""
+        with patch.object(mock_search_data, 'data', pd.DataFrame()):
+            result = mock_search_data.get_states()
+            assert len(result) == 0
+    
+    def test_get_districts_empty_result(self, mock_search_data):
+        """Test get_districts when the dataset is empty."""
+        with patch.object(mock_search_data, 'data', pd.DataFrame()):
+            result = mock_search_data.get_districts()
+            assert len(result) == 0
+
 
 
 class TestConvenienceFunctions:
@@ -262,6 +343,20 @@ class TestConvenienceFunctions:
         
         assert instance1 is instance2
         MockPincodeData.assert_called_once()
+    
+    @patch('pinin.core._get_default_instance')
+    def test_convenience_functions_handle_exceptions(self, mock_get_instance):
+        """Test that convenience functions handle exceptions from PincodeData."""
+        mock_instance = MagicMock()
+        mock_instance.get_state.side_effect = DataNotFoundError("Pincode not found")
+        mock_get_instance.return_value = mock_instance
+        
+        with pytest.raises(DataNotFoundError):
+            get_state("999999")
+        
+        mock_instance.get_pincode_info.side_effect = DataNotFoundError("Pincode not found")
+        with pytest.raises(DataNotFoundError):
+            get_pincode_info("999999")
 
 
 class TestStatistics:
@@ -293,6 +388,17 @@ class TestStatistics:
         assert stats['unique_states'] == 2    # DELHI, MAHARASHTRA
         assert stats['unique_districts'] == 2 # Central Delhi, Mumbai
         assert stats['unique_offices'] == 4   # All offices are unique
+    
+    def test_get_statistics_empty_dataset(self, mock_stats_data):
+        """Test get_statistics when the dataset is empty."""
+        with patch.object(mock_stats_data, 'data', pd.DataFrame()):
+            stats = mock_stats_data.get_statistics()
+            assert stats['total_records'] == 0
+            assert stats['unique_pincodes'] == 0
+            assert stats['unique_states'] == 0
+            assert stats['unique_districts'] == 0
+            assert stats['unique_offices'] == 0
+
 
 
 if __name__ == '__main__':
