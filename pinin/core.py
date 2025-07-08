@@ -277,7 +277,7 @@ class PincodeData:
             office_name: Office name to search for (case-insensitive, partial match)
             
         Returns:
-            List of dictionaries containing matching office information
+            List[Dict[str, Any]]: List of dictionaries containing matching office information.  Each dictionary has the same structure as the rows in the underlying DataFrame.
         """
         if self.data is None:
             raise DataLoadError("Data not loaded")

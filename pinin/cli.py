@@ -115,12 +115,55 @@ Examples:
     args = parser.parse_args()
     
     try:
-        # Initialize PincodeData with custom file if provided
         if args.data_file:
             pincode_data = PincodeData(args.data_file)
             if args.verbose:
                 print(f"Using custom data file: {args.data_file}")
-        
+
+        if args.list_states:
+            list_states(args.json, args.verbose)
+            return
+
+        if args.list_districts:
+            list_districts(args.list_districts, args.json, args.verbose)
+            return
+
+        if args.stats:
+            show_statistics(args.json, args.verbose, args.data_file)
+            return
+
+        if args.search_state:
+            search_state(args.search_state, args.json, args.verbose, args.data_file)
+            return
+
+        if args.search_district:
+            search_district(args.search_district, args.in_state, args.json, args.verbose, args.data_file)
+            return
+
+        if not args.pincode:
+            parser.error("Pincode is required unless using search or list options")
+
+        if not args.pincode.isdigit() or len(args.pincode) != 6:
+            raise argparse.ArgumentTypeError("Invalid pincode format. Must be a 6-digit number.")
+
+        lookup_pincode(args.pincode, args, args.data_file)
+
+    except argparse.ArgumentTypeError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+    except (InvalidPincodeError, DataNotFoundError, DataLoadError) as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print("\nInterrupted by user", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"Unexpected error: {e}", file=sys.stderr)
+        if args.verbose:
+            import traceback
+            traceback.print_exc()
+        sys.exit(1)
+
         # Handle list operations
         if args.list_states:
             list_states(args.json, args.verbose)
