@@ -339,6 +339,9 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## Changelog
 
+### v0.1.8
+- **Fixed**: Incremented version to resolve PyPI "File already exists" error.
+
 ### v0.1.7
 - **Performance Enhancement**: Implemented `lru_cache` for `_get_default_instance` to ensure `PincodeData` is a singleton and loaded only once, optimizing performance for repeated calls to convenience functions.
 - **Code Refactoring**: Refactored `PincodeData` methods (`get_state`, `get_district`, `get_taluk`, `get_offices`) to use a common helper method `_get_info_field` for improved code reusability and maintainability.
