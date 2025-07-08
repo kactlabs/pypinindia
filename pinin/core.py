@@ -49,7 +49,7 @@ class PincodeData:
                 raise DataLoadError(f"Data file not found: {self._data_file}")
             
             # Try different encodings to handle various CSV file formats
-            encodings = ['utf-8-sig', 'utf-8', 'latin-1', 'iso-8859-1', 'cp1252']
+            encodings = ['utf-8-sig', 'utf-8', 'iso-8859-1', 'cp1252']
 
             
             for encoding in encodings:
