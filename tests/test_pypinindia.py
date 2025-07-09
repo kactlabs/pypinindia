@@ -9,6 +9,7 @@ import os
 import subprocess
 import sys
 import json
+import difflib
 
 from pinin import (
     PincodeData,
@@ -223,6 +224,11 @@ class TestPincodeLookup:
         """Test get_offices when no data is found for the pincode."""
         result = mock_pincode_data.get_offices("110001")
         assert result != []
+    class PincodeData:   
+         def test_suggest_similar_pincodes(self, mock_pincode_data):
+            suggestions = mock_pincode_data.suggest_similar_pincodes("110004")
+            assert isinstance(suggestions, list)
+            assert any(pin in ['110001', '110002', '110003'] for pin in suggestions)
 
 
 class TestSearchFunctionality:
@@ -603,6 +609,7 @@ class TestCLISearchOperations:
             # Should contain statistics keywords
             output_lower = result.stdout.lower()
             assert any(keyword in output_lower for keyword in ['total', 'records', 'unique', 'states'])
+            
 
 if __name__ == '__main__':
     pytest.main([__file__])
