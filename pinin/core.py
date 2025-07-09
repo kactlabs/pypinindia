@@ -271,6 +271,42 @@ class PincodeData:
         
         return sorted(filtered_data['pincode'].unique().tolist()) if not filtered_data.empty else []
     
+    def search_by_taluk(self, taluk_name: str, state_name: Optional[str] = None, district_name: Optional[str] = None) -> List[str]:
+        """
+        Search for pincodes by taluk name.
+
+        Args:
+            taluk_name: Taluk name to search (case-insensitive)
+            state_name: Optional state name to narrow search
+            district_name: Optional district name to narrow search further
+
+        Returns:
+            List of unique pincodes in the taluk
+        """
+        if self.data is None:
+            raise DataLoadError("Data not loaded")
+
+        # Case-insensitive search on taluk
+        filtered_data = self.data[
+            self.data['taluk'].str.upper() == taluk_name.upper()
+        ]
+
+        # Optional filter by state
+        if state_name:
+            filtered_data = filtered_data[
+                filtered_data['statename'].str.upper() == state_name.upper()
+            ]
+
+        # Optional filter by district
+        if district_name:
+            filtered_data = filtered_data[
+                filtered_data['districtname'].str.upper() == district_name.upper()
+            ]
+
+        return sorted(filtered_data['pincode'].unique().tolist()) if not filtered_data.empty else []
+
+
+    
     def search_by_office(self, office_name: str) -> List[Dict[str, Any]]:
         """
         Search for pincodes by office name (partial match).
