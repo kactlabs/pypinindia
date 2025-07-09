@@ -248,7 +248,16 @@ class PincodeData:
             self.data['statename'].str.upper() == state_name.upper()
         ]
         
-        return sorted(filtered_data['pincode'].unique().tolist()) if not filtered_data.empty else []
+        if not filtered_data.empty:
+            return sorted(filtered_data['pincode'].unique().tolist())
+        else:
+            suggestions = self.suggest_states(state_name)
+            if suggestions:
+                raise DataNotFoundError(
+                    f"No data found for state '{state_name}'. Did you mean: {', '.join(suggestions)}?"
+                )
+            return []
+
     
     @lru_cache(maxsize=256)
     def search_by_district(self, district_name: str, state_name: Optional[str] = None) -> List[str]:
@@ -275,7 +284,17 @@ class PincodeData:
                 filtered_data['statename'].str.upper() == state_name.upper()
             ]
         
-        return sorted(filtered_data['pincode'].unique().tolist()) if not filtered_data.empty else []
+        if not filtered_data.empty:
+            return sorted(filtered_data['pincode'].unique().tolist())
+        else:
+            suggestions = self.suggest_districts(district_name, state_name)
+            if suggestions:
+                raise DataNotFoundError(
+                    f"No data found for district '{district_name}'. Did you mean: {', '.join(suggestions)}?"
+                )
+            return []
+
+
     
     @lru_cache(maxsize=256)
     def search_by_taluk(self, taluk_name: str, state_name: Optional[str] = None, district_name: Optional[str] = None) -> List[str]:
