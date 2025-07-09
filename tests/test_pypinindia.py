@@ -270,6 +270,13 @@ class TestSearchFunctionality:
         assert len(result) == 2
         assert 'Central Delhi' in result
         assert 'Mumbai' in result
+
+    
+
+    def test_search_by_district_wrong_state(self, mock_search_data):
+        result = mock_search_data.search_by_district("Mumbai", "DELHI")
+        assert result == []
+
     
     def test_get_districts_filtered_by_state(self, mock_search_data):
         """Test getting districts filtered by state."""
