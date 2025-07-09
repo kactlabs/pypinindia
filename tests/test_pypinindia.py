@@ -160,6 +160,14 @@ class TestPincodeLookup:
         assert result[0]['statename'] == 'DELHI'
         assert result[0]['pincode'] == '110001'
     
+    def test_get_pincode_info_with_delivery_filter(self, mock_pincode_data):
+        """Test filtering pincode info by delivery status."""
+        all_offices = mock_pincode_data.get_pincode_info("110001")
+        non_delivery_offices = [
+            office for office in all_offices 
+            if office['Deliverystatus'] == 'Non-Delivery'
+        ]
+    
     def test_get_state(self, mock_pincode_data):
         """Test getting state for pincode."""
         result = mock_pincode_data.get_state("110001")
