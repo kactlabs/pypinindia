@@ -75,6 +75,10 @@ class PincodeData:
             
             # Convert pincode to string for consistent handling
             self.data['pincode'] = self.data['pincode'].astype(str)
+            # Clean spaces globally in key columns (useful for all searches)
+            for col in ['taluk', 'statename', 'districtname', 'officename']:
+                self.data[col] = self.data[col].astype(str).str.strip()
+
             
         except pd.errors.EmptyDataError:
             raise DataLoadError("Data file is empty", self._data_file)
@@ -270,6 +274,41 @@ class PincodeData:
             ]
         
         return sorted(filtered_data['pincode'].unique().tolist()) if not filtered_data.empty else []
+    
+    def search_by_taluk(self, taluk_name: str, state_name: Optional[str] = None, district_name: Optional[str] = None) -> List[str]:
+        """
+        Search for pincodes by taluk name.
+
+        Args:
+            taluk_name: Taluk name to search (case-insensitive)
+            state_name: Optional state name to narrow search
+            district_name: Optional district name to narrow search further
+
+        Returns:
+            List of unique pincodes in the taluk
+        """
+        if self.data is None:
+            raise DataLoadError("Data not loaded")
+
+        # Case-insensitive search on taluk
+        filtered_data = self.data[
+            self.data['taluk'].str.strip().str.upper() == taluk_name.strip().upper()
+        ]
+
+        if state_name:
+            filtered_data = filtered_data[
+            filtered_data['statename'].str.strip().str.upper() == state_name.strip().upper()
+        ]
+
+        if district_name:
+            filtered_data = filtered_data[
+                filtered_data['districtname'].str.strip().str.upper() == district_name.strip().upper()
+            ]
+
+
+        return sorted(filtered_data['pincode'].unique().tolist()) if not filtered_data.empty else []
+
+
     
     def search_by_office(self, office_name: str) -> List[Dict[str, Any]]:
         """
