@@ -228,7 +228,8 @@ class PincodeData:
             return self._get_info_field(pincode, 'officename') # type: ignore
         except IndexError:
             return []
-
+        
+    @lru_cache(maxsize=256)
     def search_by_state(self, state_name: str) -> List[str]:
         """
         Get all pincodes for a given state.
@@ -249,6 +250,7 @@ class PincodeData:
         
         return sorted(filtered_data['pincode'].unique().tolist()) if not filtered_data.empty else []
     
+    @lru_cache(maxsize=256)
     def search_by_district(self, district_name: str, state_name: Optional[str] = None) -> List[str]:
         """
         Get all pincodes for a given district.
@@ -275,6 +277,7 @@ class PincodeData:
         
         return sorted(filtered_data['pincode'].unique().tolist()) if not filtered_data.empty else []
     
+    @lru_cache(maxsize=256)
     def search_by_taluk(self, taluk_name: str, state_name: Optional[str] = None, district_name: Optional[str] = None) -> List[str]:
         """
         Search for pincodes by taluk name.
