@@ -1,19 +1,26 @@
 from pinin.core import PincodeData  # Replace with your actual module name
 
-# Initialize the PincodeData instance
 pincode_data = PincodeData()
 
-# Test 1: Suggest States
-print("State suggestions for 'Tamilnadu':")
-suggested_states = pincode_data.suggest_states("Tamilnadu")
-print(suggested_states)
+# Test 1: Typo in state name - 'Tmilnadu' for 'Tamil Nadu'
+print("Testing State Suggestion for 'Tmilnadu':")
+suggested_states = pincode_data.suggest_states("Tmilnadu")
+print("Suggestions:", suggested_states)
+assert any(state.lower() == 'tamil nadu' for state in suggested_states), \
+       "Test Failed: 'Tamil Nadu' not suggested."
 
-# Test 2: Suggest Districts (without state filter)
-print("\nDistrict suggestions for 'Bangaluru':")
+# Test 2: Typo in district name - 'Bangaluru' for 'Bengaluru'
+print("\nTesting District Suggestion for 'Bangaluru':")
 suggested_districts = pincode_data.suggest_districts("Bangaluru")
-print(suggested_districts)
+print("Suggestions:", suggested_districts)
+assert any(district.lower() == 'bengaluru' for district in suggested_districts), \
+       "Test Failed: 'Bengaluru' not suggested."
 
-# Test 3: Suggest Districts (with state filter)
-print("\nDistrict suggestions for 'Bangaluru' in 'Karnataka':")
+# Test 3: District suggestion within a state (Optional Test)
+print("\nTesting District Suggestion for 'Bangaluru' in 'Karnataka':")
 suggested_districts_state = pincode_data.suggest_districts("Bangaluru", state_name="Karnataka")
-print(suggested_districts_state)
+print("Suggestions:", suggested_districts_state)
+assert any(district.lower() == 'bengaluru' for district in suggested_districts_state), \
+       "Test Failed: 'Bengaluru' not suggested within Karnataka."
+
+print("\nAll tests passed successfully!")

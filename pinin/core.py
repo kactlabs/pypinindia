@@ -7,6 +7,8 @@ import re
 from functools import lru_cache
 from typing import Dict, List, Optional, Union, Any
 import pandas as pd
+from difflib import get_close_matches
+
 
 from .exceptions import InvalidPincodeError, DataNotFoundError, DataLoadError
 
@@ -49,7 +51,7 @@ class PincodeData:
                 raise DataLoadError(f"Data file not found: {self._data_file}")
             
             # Try different encodings to handle various CSV file formats
-            encodings = ['utf-8-sig', 'utf-8', 'utf-16', 'cp1252']
+            encodings = ['utf-8-sig', 'utf-8', 'iso-8859-1', 'cp1252']
 
             
             for encoding in encodings:
@@ -277,7 +279,7 @@ class PincodeData:
             office_name: Office name to search for (case-insensitive, partial match)
             
         Returns:
-            List of dictionaries containing matching office information
+            List[Dict[str, Any]]: List of dictionaries containing matching office information.  Each dictionary has the same structure as the rows in the underlying DataFrame.
         """
         if self.data is None:
             raise DataLoadError("Data not loaded")
@@ -339,6 +341,70 @@ class PincodeData:
             'unique_districts': self.data['districtname'].nunique() if not self.data.empty else 0,
             'unique_offices': self.data['officename'].nunique() if not self.data.empty else 0,
         }
+    
+   
+    @staticmethod
+    def _normalize(text: str) -> str:
+        """
+        Normalize text by:
+        - Lowercasing
+        - Removing non-alphanumeric characters (spaces, hyphens, etc.)
+        """
+        return re.sub(r'[^a-z0-9]', '', text.lower())
+
+    def suggest_states(self, query: str, n: int = 5, cutoff: float = 0.6) -> List[str]:
+        states = self.get_states()
+        normalized_states = {state: self._normalize(state) for state in states}
+        
+        normalized_query = self._normalize(query)
+        
+        prefix_matches = [
+            state for state, norm in normalized_states.items()
+            if norm.startswith(normalized_query)
+        ]
+        
+        if prefix_matches:
+            return prefix_matches[:n]
+        
+        close_matches = get_close_matches(
+            normalized_query,
+            list(normalized_states.values()),
+            n=n,
+            cutoff=cutoff
+        )
+        
+        result = [
+            state for state, norm in normalized_states.items() if norm in close_matches
+        ]
+        
+        return result
+
+    def suggest_districts(self, query: str, state_name: Optional[str] = None, n: int = 5, cutoff: float = 0.6) -> List[str]:
+        districts = self.get_districts(state_name)
+        normalized_districts = {district: self._normalize(district) for district in districts}
+        
+        normalized_query = self._normalize(query)
+        
+        prefix_matches = [
+            district for district, norm in normalized_districts.items()
+            if norm.startswith(normalized_query)
+        ]
+        
+        if prefix_matches:
+            return prefix_matches[:n]
+        
+        close_matches = get_close_matches(
+            normalized_query,
+            list(normalized_districts.values()),
+            n=n,
+            cutoff=cutoff
+        )
+        
+        result = [
+            district for district, norm in normalized_districts.items() if norm in close_matches
+        ]
+        
+        return result
 
 
 @lru_cache(maxsize=1)
