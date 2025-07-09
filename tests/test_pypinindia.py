@@ -268,7 +268,12 @@ class TestSearchFunctionality:
         """Test searching pincodes by district with state filter."""
         result = mock_search_data.search_by_district("Mumbai", "MAHARASHTRA")
         assert len(result) == 2
-    
+
+    def test_search_by_district_state_mismatch(self,mock_search_data):
+        """District exists, but not in the specified state."""
+        result = mock_search_data.search_by_district("Mumbai", "DELHI")
+        assert result == []
+
     def test_get_states(self, mock_search_data):
         """Test getting all states."""
         result = mock_search_data.get_states()
