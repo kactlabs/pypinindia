@@ -44,6 +44,22 @@ class PincodeData:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         return os.path.join(current_dir, "All_India_pincode_data.csv")
     
+    def get_postal_regions(self) -> Dict[str, List[str]]:
+        """
+        Get unique values of postal office types and delivery statuses.
+
+        Returns:
+            Dictionary containing lists of unique office types and delivery statuses.
+        """
+        if self.data is None:
+            raise DataLoadError("Data not loaded")
+        
+        return {
+            "office_types": sorted(self.data['officetype'].dropna().unique().tolist()),
+            "delivery_statuses": sorted(self.data['Deliverystatus'].dropna().unique().tolist())
+        }
+
+    
     def _load_data(self) -> None:
         """Load pincode data from CSV file."""
         try:
