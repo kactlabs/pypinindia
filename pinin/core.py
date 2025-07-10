@@ -5,6 +5,7 @@ Core functionality for Indian pincode data lookup and management.
 import os
 import re
 from functools import lru_cache
+from typing import cast
 from typing import Dict, List, Optional, Union, Any
 import pandas as pd
 from difflib import get_close_matches
@@ -152,16 +153,11 @@ class PincodeData:
         return sorted(self.data['Deliverystatus'].dropna().unique().tolist())
     
     def get_unique_pincodes_count_by_state(self) -> Dict[str, int]:
-        """
-        Get count of unique pincodes per state.
-
-        Returns:
-            Dictionary with state names as keys and unique pincode counts as values.
-        """
         if self.data is None:
             raise DataLoadError("Data not loaded")
         
-        return self.data.groupby('statename')['pincode'].nunique().sort_values(ascending=False).to_dict()
+        result = self.data.groupby('statename')['pincode'].nunique().sort_values(ascending=False).to_dict()
+        return cast(Dict[str, int], result)
 
     
     def _load_data(self) -> None:
