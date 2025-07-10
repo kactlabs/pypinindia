@@ -44,6 +44,50 @@ class PincodeData:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         return os.path.join(current_dir, "All_India_pincode_data.csv")
     
+    def get_postal_regions(self) -> Dict[str, List[str]]:
+        """
+        Get unique values of postal office types and delivery statuses.
+
+        Returns:
+            Dictionary containing lists of unique office types and delivery statuses.
+        """
+        if self.data is None:
+            raise DataLoadError("Data not loaded")
+        
+        return {
+            "office_types": sorted(self.data['officetype'].dropna().unique().tolist()),
+            "delivery_statuses": sorted(self.data['Deliverystatus'].dropna().unique().tolist())
+        }
+    
+    def get_unique_taluks(self, state_name: Optional[str] = None, district_name: Optional[str] = None) -> List[str]:
+        """
+        Get list of all unique taluks, optionally filtered by state and district.
+        
+        Args:
+            state_name: Optional state name to filter taluks.
+            district_name: Optional district name to filter taluks.
+        
+        Returns:
+            Sorted list of unique taluk names.
+        """
+        if self.data is None:
+            raise DataLoadError("Data not loaded")
+        
+        filtered_data = self.data
+        
+        if state_name:
+            filtered_data = filtered_data[
+                filtered_data['statename'].str.strip().str.upper() == state_name.strip().upper()
+            ]
+        if district_name:
+            filtered_data = filtered_data[
+                filtered_data['districtname'].str.strip().str.upper() == district_name.strip().upper()
+            ]
+        
+        return sorted(filtered_data['taluk'].dropna().unique().tolist()) if not filtered_data.empty else []
+
+
+    
     def _load_data(self) -> None:
         """Load pincode data from CSV file."""
         try:
@@ -248,7 +292,16 @@ class PincodeData:
             self.data['statename'].str.upper() == state_name.upper()
         ]
         
-        return sorted(filtered_data['pincode'].unique().tolist()) if not filtered_data.empty else []
+        if not filtered_data.empty:
+            return sorted(filtered_data['pincode'].unique().tolist())
+        else:
+            suggestions = self.suggest_states(state_name)
+            if suggestions:
+                raise DataNotFoundError(
+                    f"No data found for state '{state_name}'. Did you mean: {', '.join(suggestions)}?"
+                )
+            return []
+
     
     @lru_cache(maxsize=256)
     def search_by_district(self, district_name: str, state_name: Optional[str] = None) -> List[str]:
@@ -275,7 +328,17 @@ class PincodeData:
                 filtered_data['statename'].str.upper() == state_name.upper()
             ]
         
-        return sorted(filtered_data['pincode'].unique().tolist()) if not filtered_data.empty else []
+        if not filtered_data.empty:
+            return sorted(filtered_data['pincode'].unique().tolist())
+        else:
+            suggestions = self.suggest_districts(district_name, state_name)
+            if suggestions:
+                raise DataNotFoundError(
+                    f"No data found for district '{district_name}'. Did you mean: {', '.join(suggestions)}?"
+                )
+            return []
+
+
     
     @lru_cache(maxsize=256)
     def search_by_taluk(self, taluk_name: str, state_name: Optional[str] = None, district_name: Optional[str] = None) -> List[str]:

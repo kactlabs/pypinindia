@@ -9,6 +9,7 @@ import os
 import subprocess
 import sys
 import json
+import difflib
 
 from pinin import (
     PincodeData,
@@ -160,6 +161,14 @@ class TestPincodeLookup:
         assert result[0]['statename'] == 'DELHI'
         assert result[0]['pincode'] == '110001'
     
+    def test_get_pincode_info_with_delivery_filter(self, mock_pincode_data):
+        """Test filtering pincode info by delivery status."""
+        all_offices = mock_pincode_data.get_pincode_info("110001")
+        non_delivery_offices = [
+            office for office in all_offices 
+            if office['Deliverystatus'] == 'Non-Delivery'
+        ]
+    
     def test_get_state(self, mock_pincode_data):
         """Test getting state for pincode."""
         result = mock_pincode_data.get_state("110001")
@@ -215,6 +224,11 @@ class TestPincodeLookup:
         """Test get_offices when no data is found for the pincode."""
         result = mock_pincode_data.get_offices("110001")
         assert result != []
+    class PincodeData:   
+         def test_suggest_similar_pincodes(self, mock_pincode_data):
+            suggestions = mock_pincode_data.suggest_similar_pincodes("110004")
+            assert isinstance(suggestions, list)
+            assert any(pin in ['110001', '110002', '110003'] for pin in suggestions)
 
 
 class TestSearchFunctionality:
@@ -260,7 +274,12 @@ class TestSearchFunctionality:
         """Test searching pincodes by district with state filter."""
         result = mock_search_data.search_by_district("Mumbai", "MAHARASHTRA")
         assert len(result) == 2
-    
+
+    def test_search_by_district_state_mismatch(self,mock_search_data):
+        """District exists, but not in the specified state."""
+        result = mock_search_data.search_by_district("Mumbai", "DELHI")
+        assert result == []
+
     def test_get_states(self, mock_search_data):
         """Test getting all states."""
         result = mock_search_data.get_states()
@@ -274,6 +293,13 @@ class TestSearchFunctionality:
         assert len(result) == 2
         assert 'Central Delhi' in result
         assert 'Mumbai' in result
+
+    
+
+    def test_search_by_district_wrong_state(self, mock_search_data):
+        result = mock_search_data.search_by_district("Mumbai", "DELHI")
+        assert result == []
+
     
     def test_get_districts_filtered_by_state(self, mock_search_data):
         """Test getting districts filtered by state."""
@@ -583,6 +609,7 @@ class TestCLISearchOperations:
             # Should contain statistics keywords
             output_lower = result.stdout.lower()
             assert any(keyword in output_lower for keyword in ['total', 'records', 'unique', 'states'])
+            
 
 if __name__ == '__main__':
     pytest.main([__file__])
