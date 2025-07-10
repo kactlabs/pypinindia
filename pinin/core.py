@@ -125,27 +125,6 @@ class PincodeData:
 
         return sorted(filtered_data['officetype'].unique().tolist()) if not filtered_data.empty else []
 
-
-    
-    def get_office_types_by_state(self, state_name: str) -> List[str]:
-        """
-        Get unique postal office types for a given state.
-
-        Args:
-            state_name: Name of the state.
-
-        Returns:
-            List of unique office types available in the state.
-        """
-        if self.data is None:
-            raise DataLoadError("Data not loaded")
-        
-        filtered_data = self.data[
-            self.data['statename'].str.strip().str.upper() == state_name.strip().upper()
-        ]
-
-        return sorted(filtered_data['officetype'].dropna().unique().tolist()) if not filtered_data.empty else []
-
         
     def get_unique_office_types(self) -> List[str]:
         """
