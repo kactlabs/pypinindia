@@ -85,7 +85,103 @@ class PincodeData:
             ]
         
         return sorted(filtered_data['taluk'].dropna().unique().tolist()) if not filtered_data.empty else []
+    
+    def get_unique_offices_by_state(self, state_name: str) -> List[str]:
+        """
+        Get all unique post office names for a given state.
 
+        Args:
+            state_name: State name to filter offices.
+
+        Returns:
+            Sorted list of unique post office names.
+        """
+        if self.data is None:
+            raise DataLoadError("Data not loaded")
+
+        filtered_data = self.data[
+            self.data['statename'].str.upper() == state_name.upper()
+        ]
+
+        return sorted(filtered_data['officename'].unique().tolist()) if not filtered_data.empty else []
+    
+    def get_office_types_by_state(self, state_name: str) -> List[str]:
+        """
+        Get all unique office types for a given state.
+
+        Args:
+            state_name: State name to filter office types.
+
+        Returns:
+            Sorted list of unique office types.
+        """
+        if self.data is None:
+            raise DataLoadError("Data not loaded")
+
+        filtered_data = self.data[
+            self.data['statename'].str.upper() == state_name.upper()
+        ]
+
+        return sorted(filtered_data['officetype'].unique().tolist()) if not filtered_data.empty else []
+
+
+    
+    def get_office_types_by_state(self, state_name: str) -> List[str]:
+        """
+        Get unique postal office types for a given state.
+
+        Args:
+            state_name: Name of the state.
+
+        Returns:
+            List of unique office types available in the state.
+        """
+        if self.data is None:
+            raise DataLoadError("Data not loaded")
+        
+        filtered_data = self.data[
+            self.data['statename'].str.strip().str.upper() == state_name.strip().upper()
+        ]
+
+        return sorted(filtered_data['officetype'].dropna().unique().tolist()) if not filtered_data.empty else []
+
+        
+    def get_unique_office_types(self) -> List[str]:
+        """
+        Get list of all unique postal office types.
+
+        Returns:
+            Sorted list of unique office types.
+        """
+        if self.data is None:
+            raise DataLoadError("Data not loaded")
+        
+        return sorted(self.data['officetype'].dropna().unique().tolist())
+
+
+    def get_unique_delivery_statuses(self) -> List[str]:
+        """
+        Get list of all unique delivery statuses.
+
+        Returns:
+            Sorted list of unique delivery statuses.
+        """
+        if self.data is None:
+            raise DataLoadError("Data not loaded")
+        
+        return sorted(self.data['Deliverystatus'].dropna().unique().tolist())
+    
+    def get_unique_pincodes_count_by_state(self) -> Dict[str, int]:
+        """
+        Get count of unique pincodes per state.
+
+        Returns:
+            Dictionary with state names as keys and unique pincode counts as values.
+        """
+        if self.data is None:
+            raise DataLoadError("Data not loaded")
+        
+        return self.data.groupby('statename')['pincode'].nunique().sort_values(ascending=False).to_dict()
 
     
     def _load_data(self) -> None:
@@ -619,6 +715,20 @@ def get_states() -> List[str]:
         List of all state names
     """
     return _get_default_instance().get_states()
+
+def get_unique_office_types() -> List[str]:
+    """Convenience function to get all unique office types."""
+    return _get_default_instance().get_unique_office_types()
+
+
+def get_unique_delivery_statuses() -> List[str]:
+    """Convenience function to get all unique delivery statuses."""
+    return _get_default_instance().get_unique_delivery_statuses()
+
+def get_unique_pincodes_count_by_state() -> Dict[str, int]:
+    """Convenience function to get unique pincodes count by state."""
+    return _get_default_instance().get_unique_pincodes_count_by_state()
+
 
 
 def get_districts(state_name: Optional[str] = None) -> List[str]:
