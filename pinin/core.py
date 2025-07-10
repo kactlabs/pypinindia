@@ -85,6 +85,7 @@ class PincodeData:
             ]
         
         return sorted(filtered_data['taluk'].dropna().unique().tolist()) if not filtered_data.empty else []
+
     
     def get_unique_offices_by_state(self, state_name: str) -> List[str]:
         """
