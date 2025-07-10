@@ -58,6 +58,34 @@ class PincodeData:
             "office_types": sorted(self.data['officetype'].dropna().unique().tolist()),
             "delivery_statuses": sorted(self.data['Deliverystatus'].dropna().unique().tolist())
         }
+    
+    def get_unique_taluks(self, state_name: Optional[str] = None, district_name: Optional[str] = None) -> List[str]:
+        """
+        Get list of all unique taluks, optionally filtered by state and district.
+        
+        Args:
+            state_name: Optional state name to filter taluks.
+            district_name: Optional district name to filter taluks.
+        
+        Returns:
+            Sorted list of unique taluk names.
+        """
+        if self.data is None:
+            raise DataLoadError("Data not loaded")
+        
+        filtered_data = self.data
+        
+        if state_name:
+            filtered_data = filtered_data[
+                filtered_data['statename'].str.strip().str.upper() == state_name.strip().upper()
+            ]
+        if district_name:
+            filtered_data = filtered_data[
+                filtered_data['districtname'].str.strip().str.upper() == district_name.strip().upper()
+            ]
+        
+        return sorted(filtered_data['taluk'].dropna().unique().tolist()) if not filtered_data.empty else []
+
 
     
     def _load_data(self) -> None:
