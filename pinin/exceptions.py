@@ -52,3 +52,21 @@ class DataLoadError(PininError):
             full_message += f"\nOriginal Exception: {type(original_exception).__name__}: {original_exception}"
         
         super().__init__(full_message)
+    
+
+    
+class SummaryError(PininError):
+    """Raised when a summary operation fails or is unsupported."""
+
+    def __init__(self, pincode: Optional[str] = None, message: Optional[str] = None):
+        self.pincode = pincode
+
+        if message:
+            full_message = message
+        elif pincode:
+            full_message = f"Summary unavailable for pincode: '{pincode}'"
+        else:
+            full_message = "Summary operation failed."
+
+        super().__init__(full_message)
+
