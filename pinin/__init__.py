@@ -32,12 +32,14 @@ from .core import (
     search_by_district,
     get_states,
     get_districts,
+    get_postoffice_summary,
 )
 from .exceptions import (
     PininError,
     InvalidPincodeError,
     DataNotFoundError,
     DataLoadError,
+    SummaryError
 )
 
 __version__ = "0.1.7"
@@ -59,4 +61,6 @@ __all__ = [
     "InvalidPincodeError",
     "DataNotFoundError",
     "DataLoadError",
+    "get_postoffice_summary",
+    "SummaryError"
 ]
