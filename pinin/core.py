@@ -481,6 +481,7 @@ class PincodeData:
             "delivery_statuses": delivery
         }
     
+    @staticmethod
     def _normalize(text: str) -> str:
         """
         Normalize text by:
