@@ -1,6 +1,6 @@
 # pypinindia
 
-A modern Python library for Indian pincode lookup and geographical information.
+A Python library to find Indian pincodes and uncover related geographic details easily.
 
 [![Python Support](https://img.shields.io/pypi/pyversions/pypinindia.svg)](https://pypi.org/project/pypinindia/)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -53,6 +53,7 @@ print(f"State: {state}")
 pincode_data = PincodeData()
 district = pincode_data.get_district("110001")
 print(f"District: {district}")
+
 ```
 
 ## Usage Examples
@@ -101,6 +102,8 @@ print(f"Total states/territories: {len(states)}")
 # Get districts in a state
 districts = get_districts("Tamil Nadu")
 print(f"Districts in Tamil Nadu: {len(districts)}")
+
+
 ```
 
 ### Using PincodeData Class
@@ -140,6 +143,22 @@ try:
     state = get_state("999999")  # Doesn't exist
 except DataNotFoundError as e:
     print(f"Pincode not found: {e}")
+```
+## Taluk Implementation
+
+```python
+from pinin.core import PincodeData  # Adjust import based on your project structure
+
+pincode_data = PincodeData()
+
+# Suggest states & districts to find exact spelling from your data
+print("Suggested States:", pincode_data.suggest_states("Tamil"))
+print("Suggested Districts in Tamil Nadu:", pincode_data.suggest_districts("Tirup", state_name="Tamil Nadu"))
+
+# Check all Taluks under 'Tiruppur' (this shows exact spelling in your dataset)
+district_taluks = pincode_data.data[pincode_data.data['districtname'].str.upper() == "TIRUPPUR"]['taluk'].unique()
+print("Taluks under Tiruppur District:", district_taluks)
+
 ```
 
 ## Command Line Interface

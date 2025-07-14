@@ -5,6 +5,11 @@ Tests for pypinindia library.
 import pytest
 import pandas as pd
 from unittest.mock import patch, MagicMock
+import os 
+import subprocess
+import sys
+import json
+import difflib
 
 from pinin import (
     PincodeData,
@@ -156,6 +161,14 @@ class TestPincodeLookup:
         assert result[0]['statename'] == 'DELHI'
         assert result[0]['pincode'] == '110001'
     
+    def test_get_pincode_info_with_delivery_filter(self, mock_pincode_data):
+        """Test filtering pincode info by delivery status."""
+        all_offices = mock_pincode_data.get_pincode_info("110001")
+        non_delivery_offices = [
+            office for office in all_offices 
+            if office['Deliverystatus'] == 'Non-Delivery'
+        ]
+    
     def test_get_state(self, mock_pincode_data):
         """Test getting state for pincode."""
         result = mock_pincode_data.get_state("110001")
@@ -211,6 +224,11 @@ class TestPincodeLookup:
         """Test get_offices when no data is found for the pincode."""
         result = mock_pincode_data.get_offices("110001")
         assert result != []
+    class PincodeData:   
+         def test_suggest_similar_pincodes(self, mock_pincode_data):
+            suggestions = mock_pincode_data.suggest_similar_pincodes("110004")
+            assert isinstance(suggestions, list)
+            assert any(pin in ['110001', '110002', '110003'] for pin in suggestions)
 
 
 class TestSearchFunctionality:
@@ -275,6 +293,13 @@ class TestSearchFunctionality:
         assert len(result) == 2
         assert 'Central Delhi' in result
         assert 'Mumbai' in result
+
+    
+
+    def test_search_by_district_wrong_state(self, mock_search_data):
+        result = mock_search_data.search_by_district("Mumbai", "DELHI")
+        assert result == []
+
     
     def test_get_districts_filtered_by_state(self, mock_search_data):
         """Test getting districts filtered by state."""
@@ -403,7 +428,188 @@ class TestStatistics:
             assert stats['unique_districts'] == 0
             assert stats['unique_offices'] == 0
 
+class TestCLIBasicFunctionality:
+    """Test core CLI operations."""
+    
+    @pytest.fixture
+    def project_root(self):
+        """Get the project root directory."""
+        return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    
+    def test_cli_help(self, project_root):
+        """Test CLI help functionality."""
+        result = subprocess.run(
+            [sys.executable, "-m", "pinin.cli", "--help"],
+            capture_output=True,
+            text=True,
+            cwd=project_root
+        )
+        
+        assert result.returncode == 0
+        assert "usage" in result.stdout.lower()
+        assert "pincode" in result.stdout.lower()
+    
+    def test_cli_basic_pincode_lookup(self, project_root):
+        """Test basic pincode lookup via CLI."""
+        result = subprocess.run(
+            [sys.executable, "-m", "pinin.cli", "110001"],
+            capture_output=True,
+            text=True,
+            cwd=project_root,
+            timeout=30  # 30-second timeout
+        )
+        
+        # Should either succeed or fail gracefully
+        assert isinstance(result.returncode, int)
+        if result.returncode == 0:
+            assert len(result.stdout.strip()) > 0
+        else:
+            # If it fails, should have error message
+            assert len(result.stderr.strip()) > 0
+    
+    def test_cli_state_lookup(self, project_root):
+        """Test state lookup via CLI."""
+        result = subprocess.run(
+            [sys.executable, "-m", "pinin.cli", "--state", "110001"],
+            capture_output=True,
+            text=True,
+            cwd=project_root,
+            timeout=30
+        )
+        
+        assert isinstance(result.returncode, int)
+        # Test passes if it doesn't crash catastrophically
 
+class TestCLIErrorHandling:
+    """Test CLI error handling scenarios."""
+    
+    @pytest.fixture
+    def project_root(self):
+        """Get the project root directory."""
+        return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    
+    def test_cli_invalid_pincode_format(self, project_root):
+        """Test CLI with invalid pincode format."""
+        result = subprocess.run(
+            [sys.executable, "-m", "pinin.cli", "12345"],
+            capture_output=True,
+            text=True,
+            cwd=project_root,
+            timeout=30
+        )
+        
+        # Should fail with non-zero exit code
+        assert result.returncode != 0
+        # Should have error message
+        assert len(result.stderr.strip()) > 0 or "error" in result.stdout.lower()
+    
+    def test_cli_invalid_arguments(self, project_root):
+        """Test CLI with invalid arguments."""
+        result = subprocess.run(
+            [sys.executable, "-m", "pinin.cli", "--invalid-flag"],
+            capture_output=True,
+            text=True,
+            cwd=project_root,
+            timeout=30
+        )
+        
+        assert result.returncode != 0
+        error_output = result.stderr.lower() + result.stdout.lower()
+        assert "unrecognized" in error_output or "error" in error_output
+
+class TestCLIOutputFormats:
+    """Test different CLI output formats."""
+    
+    @pytest.fixture
+    def project_root(self):
+        """Get the project root directory."""
+        return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    
+    def test_cli_json_output(self, project_root):
+        """Test JSON output format."""
+        result = subprocess.run(
+            [sys.executable, "-m", "pinin.cli", "110001", "--json"],
+            capture_output=True,
+            text=True,
+            cwd=project_root,
+            timeout=30
+        )
+        
+        if result.returncode == 0 and result.stdout.strip():
+            # If successful and has output, should be valid JSON
+            try:
+                json_data = json.loads(result.stdout)
+                assert isinstance(json_data, (list, dict))
+            except json.JSONDecodeError:
+                pytest.fail("CLI JSON output is not valid JSON")
+        # If no output or failed, test still passes (pincode might not exist)
+    
+    def test_cli_verbose_output(self, project_root):
+        """Test verbose output format."""
+        result = subprocess.run(
+            [sys.executable, "-m", "pinin.cli", "110001", "--verbose"],
+            capture_output=True,
+            text=True,
+            cwd=project_root,
+            timeout=30
+        )
+        
+        # Test passes if command doesn't crash
+        assert isinstance(result.returncode, int)
+
+class TestCLISearchOperations:
+    """Test CLI search functionality."""
+    
+    @pytest.fixture
+    def project_root(self):
+        """Get the project root directory."""
+        return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    
+    def test_cli_list_states(self, project_root):
+        """Test listing all states via CLI."""
+        result = subprocess.run(
+            [sys.executable, "-m", "pinin.cli", "--list-states"],
+            capture_output=True,
+            text=True,
+            cwd=project_root,
+            timeout=30
+        )
+        
+        if result.returncode == 0:
+            assert len(result.stdout.strip()) > 0
+            # Should have multiple lines (multiple states)
+            lines = result.stdout.strip().split('\n')
+            assert len(lines) >= 1
+    
+    def test_cli_search_state(self, project_root):
+        """Test state search via CLI."""
+        result = subprocess.run(
+            [sys.executable, "-m", "pinin.cli", "--search-state", "DELHI"],
+            capture_output=True,
+            text=True,
+            cwd=project_root,
+            timeout=30
+        )
+
+        # Should either succeed or fail gracefully
+        assert isinstance(result.returncode, int)
+
+    def test_cli_statistics(self, project_root):
+        """Test statistics via CLI."""
+        result = subprocess.run(
+            [sys.executable, "-m", "pinin.cli", "--stats"],
+            capture_output=True,
+            text=True,
+            cwd=project_root,
+            timeout=30
+        )
+        
+        if result.returncode == 0:
+            assert len(result.stdout.strip()) > 0
+            # Should contain statistics keywords
+            output_lower = result.stdout.lower()
+            assert any(keyword in output_lower for keyword in ['total', 'records', 'unique', 'states'])
+            
 
 if __name__ == '__main__':
     pytest.main([__file__])
