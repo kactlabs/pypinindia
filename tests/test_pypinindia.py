@@ -153,7 +153,25 @@ class TestPincodeLookup:
         with patch('pandas.read_csv', return_value=data), \
              patch('os.path.exists', return_value=True):
             return PincodeData()
-    
+    @patch('pandas.read_csv')
+    def test_duplicate_pincode_records(self, mock_read_csv):
+        """Test how duplicate pincode records are handled."""
+        mock_data = pd.DataFrame({
+            'pincode': ['110001', '110001'],
+            'officename': ['Office A', 'Office B'],
+            'statename': ['DELHI', 'DELHI'],
+            'districtname': ['Central Delhi', 'Central Delhi'],
+            'taluk': ['New Delhi', 'New Delhi'],
+            'officetype': ['S.O', 'S.O'],
+            'Deliverystatus': ['Delivery', 'Delivery']
+        })
+        mock_read_csv.return_value = mock_data
+
+        with patch('os.path.exists', return_value=True):
+            pincode_data = PincodeData()
+            result = pincode_data.get_pincode_info('110001')
+            assert len(result) == 2
+
     def test_get_pincode_info(self, mock_pincode_data):
         """Test getting complete pincode information."""
         result = mock_pincode_data.get_pincode_info("110001")
@@ -274,7 +292,7 @@ class TestSearchFunctionality:
         """Test searching pincodes by district with state filter."""
         result = mock_search_data.search_by_district("Mumbai", "MAHARASHTRA")
         assert len(result) == 2
-
+        
     def test_search_by_district_state_mismatch(self,mock_search_data):
         """District exists, but not in the specified state."""
         result = mock_search_data.search_by_district("Mumbai", "DELHI")
