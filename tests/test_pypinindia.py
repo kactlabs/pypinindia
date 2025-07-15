@@ -153,7 +153,25 @@ class TestPincodeLookup:
         with patch('pandas.read_csv', return_value=data), \
              patch('os.path.exists', return_value=True):
             return PincodeData()
-    
+    @patch('pandas.read_csv')
+    def test_duplicate_pincode_records(self, mock_read_csv):
+        """Test how duplicate pincode records are handled."""
+        mock_data = pd.DataFrame({
+            'pincode': ['110001', '110001'],
+            'officename': ['Office A', 'Office B'],
+            'statename': ['DELHI', 'DELHI'],
+            'districtname': ['Central Delhi', 'Central Delhi'],
+            'taluk': ['New Delhi', 'New Delhi'],
+            'officetype': ['S.O', 'S.O'],
+            'Deliverystatus': ['Delivery', 'Delivery']
+        })
+        mock_read_csv.return_value = mock_data
+
+        with patch('os.path.exists', return_value=True):
+            pincode_data = PincodeData()
+            result = pincode_data.get_pincode_info('110001')
+            assert len(result) == 2
+
     def test_get_pincode_info(self, mock_pincode_data):
         """Test getting complete pincode information."""
         result = mock_pincode_data.get_pincode_info("110001")
@@ -283,7 +301,7 @@ class TestSearchFunctionality:
         """Test searching pincodes by district with state filter."""
         result = mock_search_data.search_by_district("Mumbai", "MAHARASHTRA")
         assert len(result) == 2
-
+        
     def test_search_by_district_state_mismatch(self,mock_search_data):
         """District exists, but not in the specified state."""
         result = mock_search_data.search_by_district("Mumbai", "DELHI")
@@ -528,12 +546,12 @@ class TestCLIErrorHandling:
 
 class TestCLIOutputFormats:
     """Test different CLI output formats."""
-    
+
     @pytest.fixture
     def project_root(self):
         """Get the project root directory."""
         return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    
+
     def test_cli_json_output(self, project_root):
         """Test JSON output format."""
         result = subprocess.run(
@@ -543,7 +561,7 @@ class TestCLIOutputFormats:
             cwd=project_root,
             timeout=30
         )
-        
+
         if result.returncode == 0 and result.stdout.strip():
             # If successful and has output, should be valid JSON
             try:
@@ -551,8 +569,7 @@ class TestCLIOutputFormats:
                 assert isinstance(json_data, (list, dict))
             except json.JSONDecodeError:
                 pytest.fail("CLI JSON output is not valid JSON")
-        # If no output or failed, test still passes (pincode might not exist)
-    
+
     def test_cli_verbose_output(self, project_root):
         """Test verbose output format."""
         result = subprocess.run(
@@ -562,9 +579,28 @@ class TestCLIOutputFormats:
             cwd=project_root,
             timeout=30
         )
-        
+
         # Test passes if command doesn't crash
         assert isinstance(result.returncode, int)
+
+    def test_cli_combined_flags(self, project_root):
+        """Test CLI with --json and --verbose together."""
+        result = subprocess.run(
+            [sys.executable, "-m", "pinin.cli", "110001", "--json", "--verbose"],
+            capture_output=True,
+            text=True,
+            cwd=project_root,
+            timeout=30
+        )
+
+        assert result.returncode == 0
+        assert result.stdout
+        try:
+            json_data = json.loads(result.stdout)
+            assert isinstance(json_data, (list, dict))
+        except json.JSONDecodeError:
+            pytest.fail("Output is not valid JSON even with --json flag")
+
 
 class TestCLISearchOperations:
     """Test CLI search functionality."""
