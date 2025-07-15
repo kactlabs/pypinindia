@@ -537,12 +537,12 @@ class TestCLIErrorHandling:
 
 class TestCLIOutputFormats:
     """Test different CLI output formats."""
-    
+
     @pytest.fixture
     def project_root(self):
         """Get the project root directory."""
         return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    
+
     def test_cli_json_output(self, project_root):
         """Test JSON output format."""
         result = subprocess.run(
@@ -552,7 +552,7 @@ class TestCLIOutputFormats:
             cwd=project_root,
             timeout=30
         )
-        
+
         if result.returncode == 0 and result.stdout.strip():
             # If successful and has output, should be valid JSON
             try:
@@ -560,8 +560,7 @@ class TestCLIOutputFormats:
                 assert isinstance(json_data, (list, dict))
             except json.JSONDecodeError:
                 pytest.fail("CLI JSON output is not valid JSON")
-        # If no output or failed, test still passes (pincode might not exist)
-    
+
     def test_cli_verbose_output(self, project_root):
         """Test verbose output format."""
         result = subprocess.run(
@@ -571,9 +570,28 @@ class TestCLIOutputFormats:
             cwd=project_root,
             timeout=30
         )
-        
+
         # Test passes if command doesn't crash
         assert isinstance(result.returncode, int)
+
+    def test_cli_combined_flags(self, project_root):
+        """Test CLI with --json and --verbose together."""
+        result = subprocess.run(
+            [sys.executable, "-m", "pinin.cli", "110001", "--json", "--verbose"],
+            capture_output=True,
+            text=True,
+            cwd=project_root,
+            timeout=30
+        )
+
+        assert result.returncode == 0
+        assert result.stdout
+        try:
+            json_data = json.loads(result.stdout)
+            assert isinstance(json_data, (list, dict))
+        except json.JSONDecodeError:
+            pytest.fail("Output is not valid JSON even with --json flag")
+
 
 class TestCLISearchOperations:
     """Test CLI search functionality."""
