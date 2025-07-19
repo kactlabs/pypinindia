@@ -230,6 +230,15 @@ class TestPincodeLookup:
             assert isinstance(suggestions, list)
             assert any(pin in ['110001', '110002', '110003'] for pin in suggestions)
 
+    def test_invalid_pincode_alphanumeric_special_chars(self):
+        """Test invalid pincode containing alphanumeric and special characters."""
+        pincode_data = PincodeData()
+        invalid_inputs = ["1100A1", "11@001", "11 00*1", "12-3456", "PIN001"]
+        
+        for code in invalid_inputs:
+            with pytest.raises(InvalidPincodeError):
+                pincode_data._validate_pincode(code)
+
 
 class TestSearchFunctionality:
     """Test search functionality."""

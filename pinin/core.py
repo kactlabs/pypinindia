@@ -518,7 +518,40 @@ class PincodeData:
             'unique_offices': self.data['officename'].nunique() if not self.data.empty else 0,
         }
     
-   
+
+
+        # ----------------------------------------------------------
+    # NEW: Summary helper method for a given pincode
+    #
+    # This method provides a quick summary of:
+    # - Total number of post offices under a pincode
+    # - Distribution of office types (e.g., H.O, S.O, B.O)
+    # - Distribution of delivery statuses (e.g., Delivery, Non-Delivery)
+    #
+    # Useful for analytics, visualizations, and high-level insights.
+    # ----------------------------------------------------------
+
+
+    def get_postoffice_summary(self, pincode: Union[str, int]) -> Dict[str, Any]:
+        if self.data is None:
+            raise DataLoadError("Data not loaded")
+
+        pincode_str = self._validate_pincode(pincode)
+        filtered_data = self._get_matching_rows(pincode_str)
+
+        if filtered_data.empty:
+            raise DataNotFoundError(pincode_str)
+
+        total = len(filtered_data)
+        types = filtered_data['officetype'].value_counts().to_dict()
+        delivery = filtered_data['Deliverystatus'].value_counts().to_dict()
+
+        return {
+            "total": total,
+            "types": types,
+            "delivery_statuses": delivery
+        }
+    
     @staticmethod
     def _normalize(text: str) -> str:
         """
@@ -554,6 +587,8 @@ class PincodeData:
         ]
         
         return result
+    
+    
 
     def suggest_districts(self, query: str, state_name: Optional[str] = None, n: int = 5, cutoff: float = 0.6) -> List[str]:
         districts = self.get_districts(state_name)
@@ -587,6 +622,7 @@ class PincodeData:
 def _get_default_instance() -> PincodeData:
     """Get or create the default PincodeData instance."""
     return PincodeData()
+    
 
 
 # Convenience functions
@@ -717,3 +753,20 @@ def get_districts(state_name: Optional[str] = None) -> List[str]:
         List of district names
     """
     return _get_default_instance().get_districts(state_name)
+
+
+
+
+
+def get_postoffice_summary(pincode: Union[str, int]) -> Dict[str, Any]:
+    # """
+    # Convenience function to get post office summary for a pincode.
+
+    # Args:
+    #     pincode: The pincode to summarize
+
+    # Returns:
+    #     Dictionary with summary statistics
+    # """
+    return _get_default_instance().get_postoffice_summary(pincode)
+
