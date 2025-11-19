@@ -34,6 +34,11 @@ from .core import (
     get_districts,
     get_postoffice_summary,
 )
+from .batch import (
+    BatchProcessor,
+    batch_get_states,
+    async_batch_get_states
+)
 from .exceptions import (
     PininError,
     InvalidPincodeError,
@@ -62,5 +67,8 @@ __all__ = [
     "DataNotFoundError",
     "DataLoadError",
     "get_postoffice_summary",
-    "SummaryError"
+    "SummaryError",
+    "BatchProcessor",
+    "batch_get_states",
+    "async_batch_get_states"
 ]
