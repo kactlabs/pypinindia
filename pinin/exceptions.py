@@ -56,7 +56,7 @@ class DataLoadError(PininError):
 
     
 class SummaryError(PininError):
-    """Raised when a summary operation fails or is unsupported."""
+    """Raised when a summary operation fails."""
 
     def __init__(self, pincode: Optional[str] = None, message: Optional[str] = None):
         self.pincode = pincode
