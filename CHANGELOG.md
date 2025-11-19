@@ -6,6 +6,49 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [Unreleased] - 2025-11-19
+
+### Changed
+- Updated exception handling for improved error messages
+
+## [Unreleased] - 2025-07-25
+
+### Added
+- Method to fetch unique post offices by state in core.py
+- Fuzzy matching enhancement for improved search accuracy
+- Enhanced search by taluk functionality
+- Cache implementation for better performance
+- Auto-suggestion feature for user input
+- Postal office types and delivery statuses listing
+- Taluk listing method for enhanced dataset navigation
+- Utility methods for office types by state
+- Pincode count summary functionality
+
+### Fixed
+- Updated states list in core.py
+- Resolved conflict errors in state handling
+
+## [Unreleased] - 2025-07-20
+
+### Removed
+- Deleted unwanted sample.py file
+
+## [Unreleased] - 2025-07-16
+
+### Added
+- Pincode validation for alphanumeric and special characters
+- Delivery status test cases
+
+## [Unreleased] - 2025-07-13
+
+### Added
+- `get_postoffice_summary` helper function in core.py
+- `SummaryError` exception in exceptions.py
+- Example file to test new summary functionality
+
+### Fixed
+- Made `_normalize` a static method to resolve test failures
+
 ## [0.1.8] - 2025-07-07
 
 ### Fixed
