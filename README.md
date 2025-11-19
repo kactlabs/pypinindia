@@ -1,6 +1,6 @@
 # pypinindia
 
-A Python library to find Indian pincodes and uncover related geographic details easily.
+A Python library to find Indian pincodes and uncover related geographic details easily. It fetches you states when given pincodes, taluks when given States and districts, and more!
 
 [![Python Support](https://img.shields.io/pypi/pyversions/pypinindia.svg)](https://pypi.org/project/pypinindia/)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
