@@ -47,7 +47,7 @@ from .exceptions import (
     SummaryError
 )
 
-__version__ = "0.1.7"
+__version__ = "0.1.11"
 __author__ = "Raja CSP Raman"
 __email__ = "raja.csp@gmail.com"
 
