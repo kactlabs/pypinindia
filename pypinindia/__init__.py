@@ -10,7 +10,7 @@ This library provides comprehensive pincode data lookup functionality for:
 - Search and filtering capabilities
 
 Usage:
-    from pinin import get_pincode_info, get_state, PincodeData
+    from pypinindia import get_pincode_info, get_state, PincodeData
     
     # Quick pincode lookup
     info = get_pincode_info("110001")
@@ -47,7 +47,7 @@ from .exceptions import (
     SummaryError
 )
 
-__version__ = "0.1.7"
+__version__ = "0.1.15"
 __author__ = "Raja CSP Raman"
 __email__ = "raja.csp@gmail.com"
 

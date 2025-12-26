@@ -39,7 +39,7 @@ pip install pypinindia[dev]
 ## Quick Start
 
 ```python
-from pinin import get_pincode_info, get_state, PincodeData
+from pypinindia import get_pincode_info, get_state, PincodeData
 
 # Quick pincode lookup
 info = get_pincode_info("110001")
@@ -61,7 +61,7 @@ print(f"District: {district}")
 ### Basic Pincode Lookup
 
 ```python
-from pinin import get_pincode_info, get_state, get_district, get_taluk, get_offices
+from pypinindia import get_pincode_info, get_state, get_district, get_taluk, get_offices
 
 # Get complete information for a pincode
 pincode = "110001"
@@ -85,7 +85,7 @@ offices = get_offices("110001")      # Returns: List of office names
 ### Search Operations
 
 ```python
-from pinin import search_by_state, search_by_district, get_states, get_districts
+from pypinindia import search_by_state, search_by_district, get_states, get_districts
 
 # Search pincodes by state
 delhi_pincodes = search_by_state("Delhi")
@@ -109,7 +109,7 @@ print(f"Districts in Tamil Nadu: {len(districts)}")
 ### Using PincodeData Class
 
 ```python
-from pinin import PincodeData
+from pypinindia import PincodeData
 
 # Create instance
 pincode_data = PincodeData()
@@ -131,8 +131,8 @@ custom_data = PincodeData("/path/to/custom/pincode_data.csv")
 ### Error Handling
 
 ```python
-from pinin import get_state
-from pinin.exceptions import InvalidPincodeError, DataNotFoundError
+from pypinindia import get_state
+from pypinindia.exceptions import InvalidPincodeError, DataNotFoundError
 
 try:
     state = get_state("12345")  # Invalid format
@@ -147,7 +147,7 @@ except DataNotFoundError as e:
 ## Taluk Implementation
 
 ```python
-from pinin.core import PincodeData  # Adjust import based on your project structure
+from pypinindia.core import PincodeData  # Adjust import based on your project structure
 
 pincode_data = PincodeData()
 
@@ -327,19 +327,19 @@ pytest
 ### Run Tests with Coverage
 
 ```bash
-pytest --cov=pinin --cov-report=html
+pytest --cov=pypinindia --cov-report=html
 ```
 
 ### Code Formatting
 
 ```bash
-black pinin tests examples
+black pypinindia tests examples
 ```
 
 ### Type Checking
 
 ```bash
-mypy pinin
+mypy pypinindia
 ```
 
 ## Contributing

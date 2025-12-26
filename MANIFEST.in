@@ -2,8 +2,8 @@ include README.md
 include LICENSE
 include CHANGELOG.md
 include requirements.txt
-recursive-include pinin *.py
-recursive-include pinin *.csv
+recursive-include pypinindia *.py
+recursive-include pypinindia *.csv
 recursive-include tests *.py
 recursive-include examples *.py
 exclude setup.py

@@ -11,7 +11,7 @@ import sys
 import json
 import difflib
 
-from pinin import (
+from pypinindia import (
     PincodeData,
     get_pincode_info,
     get_state,
@@ -24,7 +24,7 @@ from pinin import (
     get_districts,
 )
 
-from pinin.exceptions import (
+from pypinindia.exceptions import (
     InvalidPincodeError,
     DataNotFoundError,
     DataLoadError,
@@ -345,7 +345,7 @@ class TestSearchFunctionality:
 class TestConvenienceFunctions:
     """Test convenience functions."""
     
-    @patch('pinin.core._get_default_instance')
+    @patch('pypinindia.core._get_default_instance')
     def test_get_state_convenience(self, mock_get_instance):
         """Test convenience function for getting state."""
         mock_instance = MagicMock()
@@ -356,7 +356,7 @@ class TestConvenienceFunctions:
         assert result == 'DELHI'
         mock_instance.get_state.assert_called_once_with("110001")
     
-    @patch('pinin.core._get_default_instance')
+    @patch('pypinindia.core._get_default_instance')
     def test_get_pincode_info_convenience(self, mock_get_instance):
         """Test convenience function for getting pincode info."""
         mock_instance = MagicMock()
@@ -368,10 +368,10 @@ class TestConvenienceFunctions:
         assert result == mock_info
         mock_instance.get_pincode_info.assert_called_once_with("110001")
     
-    @patch('pinin.core.PincodeData')
+    @patch('pypinindia.core.PincodeData')
     def test_get_default_instance_singleton(self, MockPincodeData):
         """Test that _get_default_instance returns a singleton."""
-        from pinin.core import _get_default_instance
+        from pypinindia.core import _get_default_instance
         
         # Clear the cache to ensure a fresh instance is created
         _get_default_instance.cache_clear()
@@ -382,7 +382,7 @@ class TestConvenienceFunctions:
         assert instance1 is instance2
         MockPincodeData.assert_called_once()
     
-    @patch('pinin.core._get_default_instance')
+    @patch('pypinindia.core._get_default_instance')
     def test_convenience_functions_handle_exceptions(self, mock_get_instance):
         """Test that convenience functions handle exceptions from PincodeData."""
         mock_instance = MagicMock()
@@ -448,7 +448,7 @@ class TestCLIBasicFunctionality:
     def test_cli_help(self, project_root):
         """Test CLI help functionality."""
         result = subprocess.run(
-            [sys.executable, "-m", "pinin.cli", "--help"],
+            [sys.executable, "-m", "pypinindia.cli", "--help"],
             capture_output=True,
             text=True,
             cwd=project_root
@@ -461,7 +461,7 @@ class TestCLIBasicFunctionality:
     def test_cli_basic_pincode_lookup(self, project_root):
         """Test basic pincode lookup via CLI."""
         result = subprocess.run(
-            [sys.executable, "-m", "pinin.cli", "110001"],
+            [sys.executable, "-m", "pypinindia.cli", "110001"],
             capture_output=True,
             text=True,
             cwd=project_root,
@@ -479,7 +479,7 @@ class TestCLIBasicFunctionality:
     def test_cli_state_lookup(self, project_root):
         """Test state lookup via CLI."""
         result = subprocess.run(
-            [sys.executable, "-m", "pinin.cli", "--state", "110001"],
+            [sys.executable, "-m", "pypinindia.cli", "--state", "110001"],
             capture_output=True,
             text=True,
             cwd=project_root,
@@ -500,7 +500,7 @@ class TestCLIErrorHandling:
     def test_cli_invalid_pincode_format(self, project_root):
         """Test CLI with invalid pincode format."""
         result = subprocess.run(
-            [sys.executable, "-m", "pinin.cli", "12345"],
+            [sys.executable, "-m", "pypinindia.cli", "12345"],
             capture_output=True,
             text=True,
             cwd=project_root,
@@ -515,7 +515,7 @@ class TestCLIErrorHandling:
     def test_cli_invalid_arguments(self, project_root):
         """Test CLI with invalid arguments."""
         result = subprocess.run(
-            [sys.executable, "-m", "pinin.cli", "--invalid-flag"],
+            [sys.executable, "-m", "pypinindia.cli", "--invalid-flag"],
             capture_output=True,
             text=True,
             cwd=project_root,
@@ -537,7 +537,7 @@ class TestCLIOutputFormats:
     def test_cli_json_output(self, project_root):
         """Test JSON output format."""
         result = subprocess.run(
-            [sys.executable, "-m", "pinin.cli", "110001", "--json"],
+            [sys.executable, "-m", "pypinindia.cli", "110001", "--json"],
             capture_output=True,
             text=True,
             cwd=project_root,
@@ -556,7 +556,7 @@ class TestCLIOutputFormats:
     def test_cli_verbose_output(self, project_root):
         """Test verbose output format."""
         result = subprocess.run(
-            [sys.executable, "-m", "pinin.cli", "110001", "--verbose"],
+            [sys.executable, "-m", "pypinindia.cli", "110001", "--verbose"],
             capture_output=True,
             text=True,
             cwd=project_root,
@@ -577,7 +577,7 @@ class TestCLISearchOperations:
     def test_cli_list_states(self, project_root):
         """Test listing all states via CLI."""
         result = subprocess.run(
-            [sys.executable, "-m", "pinin.cli", "--list-states"],
+            [sys.executable, "-m", "pypinindia.cli", "--list-states"],
             capture_output=True,
             text=True,
             cwd=project_root,
@@ -593,7 +593,7 @@ class TestCLISearchOperations:
     def test_cli_search_state(self, project_root):
         """Test state search via CLI."""
         result = subprocess.run(
-            [sys.executable, "-m", "pinin.cli", "--search-state", "DELHI"],
+            [sys.executable, "-m", "pypinindia.cli", "--search-state", "DELHI"],
             capture_output=True,
             text=True,
             cwd=project_root,
@@ -606,7 +606,7 @@ class TestCLISearchOperations:
     def test_cli_statistics(self, project_root):
         """Test statistics via CLI."""
         result = subprocess.run(
-            [sys.executable, "-m", "pinin.cli", "--stats"],
+            [sys.executable, "-m", "pypinindia.cli", "--stats"],
             capture_output=True,
             text=True,
             cwd=project_root,
