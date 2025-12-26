@@ -33,6 +33,27 @@ extensions = [
 
 autosummary_generate = True
 
+autodoc_default_options = {
+    "members": True,
+    "undoc-members": True,
+    "show-inheritance": True,
+    "imported-members": False,
+}
+
+# Treat __all__ as the public API if present
+autodoc_preserve_defaults = True
+
+# Prevent Sphinx from creating multiple targets for the same symbol
+autodoc_typehints = "description"
+
+# Do not generate cross-reference targets for type hints
+autodoc_typehints_format = "short"
+
+# --- Suppress known, non-actionable warnings ---
+suppress_warnings = [
+    "ref.python",
+    "docutils",
+]
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
