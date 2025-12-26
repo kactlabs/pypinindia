@@ -48,11 +48,11 @@ Repository = "https://github.com/kactlabs/pypinindia"
 Issues = "https://github.com/kactlabs/pypinindia/issues"
 
 [project.scripts]
-pypinindia = "pinin.cli:main"
+pypinindia = "pypinindia.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["pinin*"]
+include = ["pypinindia*"]
 
 [tool.black]
 line-length = 88

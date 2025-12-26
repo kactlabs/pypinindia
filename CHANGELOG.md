@@ -143,14 +143,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Old usage (v0.1.2):**
 ```python
-from pinin.util import get_state, get_location
+from pypinindia.util import get_state, get_location
 state = get_state(110001)
 location = get_location(110001)
 ```
 
 **New usage (v0.2.0):**
 ```python
-from pinin import get_state, get_district, get_pincode_info
+from pypinindia import get_state, get_district, get_pincode_info
 state = get_state("110001")  # Now accepts string or int
 district = get_district("110001")  # More specific than location
 info = get_pincode_info("110001")  # Complete information

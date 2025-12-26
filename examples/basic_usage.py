@@ -6,7 +6,7 @@ This script demonstrates the main functionality of the pypinindia library
 for Indian pincode lookup and geographical information.
 """
 
-from pinin import (
+from pypinindia import (
     get_pincode_info,
     get_state,
     get_district,
@@ -18,7 +18,7 @@ from pinin import (
     get_districts,
     PincodeData,
 )
-from pinin.exceptions import InvalidPincodeError, DataNotFoundError
+from pypinindia.exceptions import InvalidPincodeError, DataNotFoundError
 
 
 def main():
