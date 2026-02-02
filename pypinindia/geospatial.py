@@ -22,16 +22,19 @@ class GeospatialData:
     - Haversine distance calculations
     """
     
-    def __init__(self, pincode_data: Optional[PincodeData] = None):
+    def __init__(self, pincode_data: Optional[PincodeData] = None, use_geocoding: bool = False):
         """
         Initialize geospatial data handler.
         
         Args:
             pincode_data: PincodeData instance. If None, creates a new one.
+            use_geocoding: If True, use real geocoding (slow). If False, use approximate coordinates (fast).
         """
         self.pincode_data = pincode_data or PincodeData()
         self._coordinate_data: Optional[pd.DataFrame] = None
         self._ball_tree: Optional[BallTree] = None
+        self.use_geocoding = use_geocoding
+        self._geocode_cache: Dict[str, Tuple[float, float]] = {}
         self._load_coordinate_data()
     
     def _load_coordinate_data(self) -> None:
@@ -39,19 +42,42 @@ class GeospatialData:
         if self.pincode_data.data is None:
             raise DataLoadError("Base pincode data not loaded")
         
-        # For now, we'll use approximate coordinates based on district/state centroids
-        # In a production system, this would be loaded from a separate coordinate database
+        # Use approximate coordinates (fast) by default
         self._coordinate_data = self._generate_approximate_coordinates()
         self._build_spatial_index()
     
+    def _geocode_pincode(self, pincode: str) -> Optional[Tuple[float, float]]:
+        """
+        Get coordinates for a pincode using geocoding.
+        
+        Args:
+            pincode: The pincode to geocode
+            
+        Returns:
+            Tuple of (latitude, longitude) or None if geocoding fails
+        """
+        try:
+            from geopy.geocoders import Nominatim
+            from geopy.exc import GeocoderTimedOut, GeocoderServiceError
+            
+            geolocator = Nominatim(user_agent="pypinindia")
+            location = geolocator.geocode(f"{pincode}, India", timeout=10)
+            
+            if location:
+                return (location.latitude, location.longitude)
+        except ImportError:
+            pass
+        except (GeocoderTimedOut, GeocoderServiceError):
+            pass
+        
+        return None
+    
     def _generate_approximate_coordinates(self) -> pd.DataFrame:
         """
-        Generate approximate coordinates for pincodes based on district/state centroids.
+        Generate coordinates for pincodes using geocoding.
         
-        This is a simplified implementation. In production, you would:
-        1. Use a comprehensive coordinate database
-        2. Geocode office addresses
-        3. Use more precise location data
+        Uses geopy's Nominatim geocoder to get real coordinates for each pincode.
+        Falls back to district/state centroids if geocoding fails.
         """
         # Sample coordinate data for major Indian cities/districts
         # This is a minimal set for demonstration - expand as needed
@@ -74,6 +100,39 @@ class GeospatialData:
             
             # Chennai
             ('Chennai', 'TAMIL NADU'): (13.0827, 80.2707),
+            
+            # Tamil Nadu districts
+            ('Madurai', 'TAMIL NADU'): (9.9252, 78.1198),
+            ('Coimbatore', 'TAMIL NADU'): (11.0168, 76.9558),
+            ('Salem', 'TAMIL NADU'): (11.6643, 78.1460),
+            ('Tiruchirappalli', 'TAMIL NADU'): (10.7905, 78.7047),
+            ('Tirunelveli', 'TAMIL NADU'): (8.7139, 77.7567),
+            ('Erode', 'TAMIL NADU'): (11.3410, 77.7172),
+            ('Vellore', 'TAMIL NADU'): (12.9165, 79.1325),
+            ('Thoothukudi', 'TAMIL NADU'): (8.7642, 78.1348),
+            ('Dindigul', 'TAMIL NADU'): (10.3673, 77.9803),
+            ('Thanjavur', 'TAMIL NADU'): (10.7870, 79.1378),
+            ('Ranipet', 'TAMIL NADU'): (12.9222, 79.3333),
+            ('Sivaganga', 'TAMIL NADU'): (9.8433, 78.4809),
+            ('Karur', 'TAMIL NADU'): (10.9601, 78.0766),
+            ('Ramanathapuram', 'TAMIL NADU'): (9.3639, 78.8370),
+            ('Virudhunagar', 'TAMIL NADU'): (9.5810, 77.9624),
+            ('Tiruppur', 'TAMIL NADU'): (11.1075, 77.3398),
+            ('Cuddalore', 'TAMIL NADU'): (11.7480, 79.7714),
+            ('Kanchipuram', 'TAMIL NADU'): (12.8342, 79.7036),
+            ('Nagapattinam', 'TAMIL NADU'): (10.7658, 79.8448),
+            ('Namakkal', 'TAMIL NADU'): (11.2189, 78.1677),
+            ('Pudukkottai', 'TAMIL NADU'): (10.3833, 78.8000),
+            ('Theni', 'TAMIL NADU'): (10.0104, 77.4977),
+            ('Thiruvallur', 'TAMIL NADU'): (13.1143, 79.9074),
+            ('Tiruvannamalai', 'TAMIL NADU'): (12.2253, 79.0747),
+            ('Nilgiris', 'TAMIL NADU'): (11.4064, 76.6932),
+            ('Perambalur', 'TAMIL NADU'): (11.2324, 78.8798),
+            ('Ariyalur', 'TAMIL NADU'): (11.1401, 79.0770),
+            ('Krishnagiri', 'TAMIL NADU'): (12.5186, 78.2137),
+            ('Dharmapuri', 'TAMIL NADU'): (12.1211, 78.1582),
+            ('Kanyakumari', 'TAMIL NADU'): (8.0883, 77.5385),
+            ('Tambaram', 'TAMIL NADU'): (12.9229, 80.1275),
             
             # Kolkata
             ('Kolkata', 'WEST BENGAL'): (22.5726, 88.3639),
@@ -405,35 +464,84 @@ class GeospatialData:
         # Create coordinate mapping for each pincode
         coordinate_data = []
         
-        for _, row in self.pincode_data.data.iterrows():
-            district = row['districtname']
-            state = row['statename']
-            pincode = row['pincode']
+        if self.use_geocoding:
+            # Get unique pincodes to avoid redundant geocoding
+            unique_pincodes = self.pincode_data.data['pincode'].unique()
             
-            # Try to find coordinates by district first
-            coords = district_coordinates.get((district, state))
+            print(f"Geocoding {len(unique_pincodes)} unique pincodes (this will take time)...")
             
-            # Fallback to state coordinates if district not found
-            if coords is None:
-                coords = state_coordinates.get(state)
+            for idx, pincode in enumerate(unique_pincodes):
+                if idx % 100 == 0 and idx > 0:
+                    print(f"Processed {idx}/{len(unique_pincodes)} pincodes...")
+                
+                # Try geocoding first
+                coords = self._geocode_pincode(pincode)
+                
+                if coords is None:
+                    # Fallback to district/state coordinates
+                    pincode_rows = self.pincode_data.data[self.pincode_data.data['pincode'] == pincode]
+                    if not pincode_rows.empty:
+                        row = pincode_rows.iloc[0]
+                        district = row['districtname']
+                        state = row['statename']
+                        
+                        coords = district_coordinates.get((district, state))
+                        if coords is None:
+                            coords = state_coordinates.get(state)
+                        if coords is None:
+                            coords = (20.5937, 78.9629)
+                        
+                        lat_variation = (hash(pincode + district) % 1000) / 100000.0 - 0.005
+                        lon_variation = (hash(pincode + state) % 1000) / 100000.0 - 0.005
+                        coords = (coords[0] + lat_variation, coords[1] + lon_variation)
+                
+                self._geocode_cache[pincode] = coords
             
-            # If still no coordinates, use a default (center of India)
-            if coords is None:
-                coords = (20.5937, 78.9629)  # Geographic center of India
+            print(f"Geocoding complete. Building coordinate dataset...")
             
-            # Add some random variation to avoid all pincodes having identical coordinates
-            # In production, this would be actual precise coordinates
-            lat_variation = (hash(pincode + district) % 1000) / 100000.0 - 0.005
-            lon_variation = (hash(pincode + state) % 1000) / 100000.0 - 0.005
-            
-            coordinate_data.append({
-                'pincode': pincode,
-                'latitude': coords[0] + lat_variation,
-                'longitude': coords[1] + lon_variation,
-                'district': district,
-                'state': state,
-                'officename': row['officename']
-            })
+            # Build coordinate data using cached geocoded results
+            for _, row in self.pincode_data.data.iterrows():
+                pincode = row['pincode']
+                coords = self._geocode_cache.get(pincode, (20.5937, 78.9629))
+                
+                coordinate_data.append({
+                    'pincode': pincode,
+                    'latitude': coords[0],
+                    'longitude': coords[1],
+                    'district': row['districtname'],
+                    'state': row['statename'],
+                    'officename': row['officename']
+                })
+        else:
+            # Fast mode: use district/state centroids with variations
+            for _, row in self.pincode_data.data.iterrows():
+                district = row['districtname']
+                state = row['statename']
+                pincode = row['pincode']
+                
+                # Try to find coordinates by district first
+                coords = district_coordinates.get((district, state))
+                
+                # Fallback to state coordinates if district not found
+                if coords is None:
+                    coords = state_coordinates.get(state)
+                
+                # If still no coordinates, use a default (center of India)
+                if coords is None:
+                    coords = (20.5937, 78.9629)
+                
+                # Add variation based on pincode to spread out locations
+                lat_variation = (hash(pincode + district) % 1000) / 100000.0 - 0.005
+                lon_variation = (hash(pincode + state) % 1000) / 100000.0 - 0.005
+                
+                coordinate_data.append({
+                    'pincode': pincode,
+                    'latitude': coords[0] + lat_variation,
+                    'longitude': coords[1] + lon_variation,
+                    'district': district,
+                    'state': state,
+                    'officename': row['officename']
+                })
         
         return pd.DataFrame(coordinate_data)
     
@@ -511,7 +619,21 @@ class GeospatialData:
         ref_lat = ref_coords.iloc[0]['latitude']
         ref_lon = ref_coords.iloc[0]['longitude']
         
-        return self.get_nearest_pincodes(ref_lat, ref_lon, limit, radius_km)
+        # Use get_nearest_pincodes with max_distance filter
+        all_results = self.get_nearest_pincodes(ref_lat, ref_lon, limit * 10, radius_km)
+        
+        # Filter to unique pincodes only (exclude the reference pincode)
+        seen_pincodes = set([pincode_str])
+        unique_results = []
+        
+        for result in all_results:
+            if result['pincode'] not in seen_pincodes:
+                seen_pincodes.add(result['pincode'])
+                unique_results.append(result)
+                if len(unique_results) >= limit:
+                    break
+        
+        return unique_results
     
     def get_nearest_pincodes(self, latitude: float, longitude: float, 
                            limit: int = 10, max_distance_km: Optional[float] = None) -> List[Dict[str, Any]]:
@@ -549,17 +671,25 @@ class GeospatialData:
             if len(indices) == 0:
                 return []
             
-            # Get distances for found points
-            distances_rad, _ = self._ball_tree.query(
-                query_point, k=min(len(indices), limit)
-            )
-            distances_km = distances_rad[0] * 6371.0
-            indices = indices[:len(distances_km)]
+            # Calculate actual distances for all points within radius
+            distances_km = []
+            for idx in indices:
+                coord_row = self._coordinate_data.iloc[idx]
+                dist = self.haversine_distance(
+                    latitude, longitude,
+                    coord_row['latitude'], coord_row['longitude']
+                )
+                distances_km.append(dist)
+            
+            # Sort by distance and limit
+            sorted_pairs = sorted(zip(distances_km, indices), key=lambda x: x[0])
+            distances_km = [d for d, _ in sorted_pairs[:limit]]
+            indices = [i for _, i in sorted_pairs[:limit]]
         else:
             # Find k nearest neighbors
             distances_rad, indices = self._ball_tree.query(query_point, k=limit)
-            distances_km = distances_rad[0] * 6371.0
-            indices = indices[0]
+            distances_km = (distances_rad[0] * 6371.0).tolist()
+            indices = indices[0].tolist()
         
         # Build result list
         results = []
