@@ -10,6 +10,7 @@ import numpy as np
 
 from .core import PincodeData
 from .exceptions import InvalidPincodeError, DataNotFoundError, DataLoadError
+from .validation import validate_coordinates
 
 
 class GeospatialData:
@@ -653,11 +654,13 @@ class GeospatialData:
         if self._coordinate_data is None or self._ball_tree is None:
             raise DataLoadError("Coordinate data not loaded")
         
-        # Validate coordinates
-        if not (-90 <= latitude <= 90):
-            raise ValueError(f"Invalid latitude: {latitude}. Must be between -90 and 90.")
-        if not (-180 <= longitude <= 180):
-            raise ValueError(f"Invalid longitude: {longitude}. Must be between -180 and 180.")
+        # Validate coordinates are within India's bounding box
+        for value, label in ((latitude, "latitude"), (longitude, "longitude")):
+            if not isinstance(value, (int, float)):
+                raise ValueError(f"Invalid {label}: {value!r}. Must be a number.")
+        ok, reason = validate_coordinates(latitude, longitude)
+        if not ok:
+            raise ValueError(f"Coordinate out of range for India: {reason}")
         
         # Convert query point to radians
         query_point = np.radians([[latitude, longitude]])

@@ -52,6 +52,12 @@ from .exceptions import (
     DataLoadError,
     SummaryError
 )
+from .validation import (
+    DataValidator,
+    ValidationReport,
+    validate_dataframe,
+    validate_coordinates,
+)
 
 __version__ = "0.1.16"
 __author__ = "Raja CSP Raman"
@@ -76,5 +82,9 @@ __all__ = [
     "SummaryError",
     "BatchProcessor",
     "batch_get_states",
-    "async_batch_get_states"
+    "async_batch_get_states",
+    "DataValidator",
+    "ValidationReport",
+    "validate_dataframe",
+    "validate_coordinates",
 ]
