@@ -12,6 +12,7 @@ from difflib import get_close_matches
 
 
 from .exceptions import InvalidPincodeError, DataNotFoundError, DataLoadError
+from .validation import DataValidator, ValidationReport
 
 
 class PincodeData:
@@ -38,6 +39,7 @@ class PincodeData:
         """
         self.data: Optional[pd.DataFrame] = None
         self._data_file = data_file or self._get_default_data_file()
+        self._validation_report: Optional[ValidationReport] = None
         self._load_data()
     
     def _get_default_data_file(self) -> str:
@@ -168,7 +170,6 @@ class PincodeData:
             # Try different encodings to handle various CSV file formats
             encodings = ['utf-8-sig', 'utf-8', 'iso-8859-1', 'cp1252']
 
-            
             for encoding in encodings:
                 try:
                     self.data = pd.read_csv(self._data_file, encoding=encoding)
@@ -177,28 +178,34 @@ class PincodeData:
                     continue
             else:
                 raise DataLoadError("Could not decode CSV file with any supported encoding")
-            
-            # Validate required columns
-            required_columns = [
-                'pincode', 'officename', 'statename', 'districtname', 
-                'taluk', 'officetype', 'Deliverystatus'
-            ]
-            
-            missing_columns = [col for col in required_columns if col not in self.data.columns]
-            if missing_columns:
-                raise DataLoadError(f"Missing required columns: {missing_columns}")
-            
+
             # Convert pincode to string for consistent handling
             self.data['pincode'] = self.data['pincode'].astype(str)
             # Clean spaces globally in key columns (useful for all searches)
             for col in ['taluk', 'statename', 'districtname', 'officename']:
                 self.data[col] = self.data[col].astype(str).str.strip()
 
-            
+            # Run full validation; raise on schema errors, log warnings for the rest
+            report = DataValidator().validate(self.data)
+            if not report.is_valid:
+                raise DataLoadError(
+                    f"Data validation failed:\n{report.summary()}",
+                    self._data_file,
+                )
+            if report.warnings:
+                import logging
+                _log = logging.getLogger(__name__)
+                for w in report.warnings:
+                    _log.warning("Data quality warning: %s", w)
+
+            self._validation_report = report
+
         except pd.errors.EmptyDataError:
             raise DataLoadError("Data file is empty", self._data_file)
         except pd.errors.ParserError as e:
             raise DataLoadError(f"Failed to parse CSV file: {str(e)}", self._data_file)
+        except DataLoadError:
+            raise
         except Exception as e:
             raise DataLoadError(f"Unexpected error loading data: {str(e)}", self._data_file)
     
@@ -517,6 +524,15 @@ class PincodeData:
             'unique_districts': self.data['districtname'].nunique() if not self.data.empty else 0,
             'unique_offices': self.data['officename'].nunique() if not self.data.empty else 0,
         }
+
+    def get_validation_report(self) -> Optional[ValidationReport]:
+        """
+        Return the ValidationReport produced when the data was last loaded.
+
+        Returns:
+            ValidationReport instance, or None if data has not been loaded yet.
+        """
+        return self._validation_report
     
 
 
