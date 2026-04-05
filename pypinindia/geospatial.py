@@ -3,6 +3,7 @@ Geospatial functionality for pypinindia - distance-based pincode search.
 """
 
 import math
+from functools import lru_cache
 import pandas as pd
 from typing import Dict, List, Optional, Tuple, Union, Any
 from sklearn.neighbors import BallTree
@@ -767,16 +768,11 @@ class GeospatialData:
         }
 
 
-# Singleton instance for convenience functions
-_geospatial_instance: Optional[GeospatialData] = None
-
-
+@lru_cache(maxsize=1)
 def _get_geospatial_instance() -> GeospatialData:
-    """Get or create singleton GeospatialData instance."""
-    global _geospatial_instance
-    if _geospatial_instance is None:
-        _geospatial_instance = GeospatialData()
-    return _geospatial_instance
+    """Get or create the default GeospatialData instance, reusing the shared PincodeData singleton."""
+    from .core import _get_default_instance
+    return GeospatialData(pincode_data=_get_default_instance())
 
 
 # Convenience functions
