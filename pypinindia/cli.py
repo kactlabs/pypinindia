@@ -11,6 +11,7 @@ from .core import (
     PincodeData, get_pincode_info, get_state, get_district, get_taluk,
     get_offices, search_by_state, search_by_district, get_states, get_districts
 )
+from .geospatial import get_nearby_pincodes, get_nearest_pincodes, get_pincode_coordinates
 from .exceptions import InvalidPincodeError, DataNotFoundError, DataLoadError
 
 
@@ -30,6 +31,8 @@ Examples:
   pypinindia --list-states             # List all states
   pypinindia --list-districts          # List all districts
   pypinindia --stats                   # Show dataset statistics
+  pypinindia --nearby 110001 --radius 10 # Find pincodes within 10km of 110001
+  pypinindia --nearest --lat 28.6139 --lon 77.2090 --limit 5  # Find 5 nearest pincodes
         """
     )
     
@@ -39,10 +42,17 @@ Examples:
         help="Pincode to lookup (6-digit number)"
     )
     
+    # Geospatial subcommands
     parser.add_argument(
-        "--state", "-s",
+        "--nearby",
+        metavar="PINCODE",
+        help="Find pincodes near the specified pincode"
+    )
+    
+    parser.add_argument(
+        "--nearest",
         action="store_true",
-        help="Get state name for the pincode"
+        help="Find nearest pincodes to coordinates (requires --lat and --lon)"
     )
     
     parser.add_argument(
@@ -96,6 +106,44 @@ Examples:
     )
     
     parser.add_argument(
+        "--state", "-s",
+        action="store_true",
+        help="Get state name for the pincode"
+    )
+    
+    parser.add_argument(
+        "--radius",
+        type=float,
+        default=5.0,
+        help="Search radius in kilometers for nearby search (default: 5)"
+    )
+    
+    parser.add_argument(
+        "--lat", "--latitude",
+        type=float,
+        help="Latitude for nearest search (decimal degrees)"
+    )
+    
+    parser.add_argument(
+        "--lon", "--longitude",
+        type=float,
+        help="Longitude for nearest search (decimal degrees)"
+    )
+    
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=10,
+        help="Maximum number of results to return (default: 10)"
+    )
+    
+    parser.add_argument(
+        "--coordinates",
+        action="store_true",
+        help="Get coordinates for the pincode"
+    )
+    
+    parser.add_argument(
         "--json", "-j",
         action="store_true",
         help="Output results in JSON format"
@@ -115,11 +163,24 @@ Examples:
     args = parser.parse_args()
     
     try:
-        if args.data_file:
-            pincode_data = PincodeData(args.data_file)
-            if args.verbose:
-                print(f"Using custom data file: {args.data_file}")
+        if args.data_file and args.verbose:
+            print(f"Using custom data file: {args.data_file}")
 
+        # Handle geospatial commands
+        if args.nearby:
+            if not args.nearby.isdigit() or len(args.nearby) != 6:
+                print(f"Error: Invalid pincode format '{args.nearby}'. Must be a 6-digit number.", file=sys.stderr)
+                sys.exit(1)
+            handle_nearby_command(args.nearby, args.radius, args.limit, args.json, args.verbose, args.data_file)
+            return
+        
+        if args.nearest:
+            if args.lat is None or args.lon is None:
+                parser.error("Both --lat and --lon are required for --nearest command")
+            handle_nearest_command(args.lat, args.lon, args.limit, args.json, args.verbose)
+            return
+
+        # Handle list operations
         if args.list_states:
             list_states(args.json, args.verbose)
             return
@@ -132,6 +193,7 @@ Examples:
             show_statistics(args.json, args.verbose, args.data_file)
             return
 
+        # Handle search operations
         if args.search_state:
             search_state(args.search_state, args.json, args.verbose, args.data_file)
             return
@@ -140,17 +202,16 @@ Examples:
             search_district(args.search_district, args.in_state, args.json, args.verbose, args.data_file)
             return
 
+        # Handle pincode operations
         if not args.pincode:
-            parser.error("Pincode is required unless using search or list options")
+            parser.error("Pincode is required unless using search, list, or geospatial options")
 
         if not args.pincode.isdigit() or len(args.pincode) != 6:
-            raise argparse.ArgumentTypeError("Invalid pincode format. Must be a 6-digit number.")
+            print(f"Error: Invalid pincode format '{args.pincode}'. Must be a 6-digit number.", file=sys.stderr)
+            sys.exit(1)
 
         lookup_pincode(args.pincode, args, args.data_file)
 
-    except argparse.ArgumentTypeError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
     except (InvalidPincodeError, DataNotFoundError, DataLoadError) as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
@@ -163,41 +224,6 @@ Examples:
             import traceback
             traceback.print_exc()
         sys.exit(1)
-
-        # Handle list operations
-        if args.list_states:
-            list_states(args.json, args.verbose)
-            return
-        
-        if args.list_districts is not None:
-            state_filter = args.list_districts if args.list_districts else None
-            list_districts(state_filter, args.json, args.verbose)
-            return
-        
-        if args.stats:
-            show_statistics(args.json, args.verbose, args.data_file)
-            return
-        
-        # Handle search operations
-        if args.search_state:
-            search_state(args.search_state, args.json, args.verbose, args.data_file)
-            return
-        
-        if args.search_district:
-            search_district(args.search_district, args.in_state, args.json, args.verbose, args.data_file)
-            return
-        
-        # Handle pincode operations
-        if not args.pincode:
-            parser.error("Pincode is required unless using search or list options")
-        
-        # Validate pincode format
-        if not args.pincode.isdigit() or len(args.pincode) != 6:
-            print(f"Error: Invalid pincode format '{args.pincode}'. Must be a 6-digit number.", file=sys.stderr)
-            sys.exit(1)
-        
-        # Execute pincode lookup
-        lookup_pincode(args.pincode, args, args.data_file)
     
     except InvalidPincodeError as e:
         print(f"Error: {e}", file=sys.stderr)
@@ -226,7 +252,11 @@ Examples:
 def lookup_pincode(pincode: str, args: argparse.Namespace, data_file: Optional[str] = None) -> None:
     """Lookup information for a specific pincode."""
     try:
-        if args.state:
+        if args.coordinates:
+            coords_result = get_pincode_coordinates(pincode)
+            output_result(coords_result, args.json, args.verbose, f"Coordinates for {pincode}")
+        
+        elif args.state:
             state_result = get_state(pincode) if not data_file else PincodeData(data_file).get_state(pincode)
             output_result(state_result, args.json, args.verbose, f"State for {pincode}")
         
@@ -246,6 +276,38 @@ def lookup_pincode(pincode: str, args: argparse.Namespace, data_file: Optional[s
             # Default: show complete information
             info_result = get_pincode_info(pincode) if not data_file else PincodeData(data_file).get_pincode_info(pincode)
             output_result(info_result, args.json, args.verbose, f"Complete information for {pincode}")
+    
+    except Exception as e:
+        raise e
+
+
+def handle_nearby_command(pincode: str, radius_km: float, limit: int, json_output: bool, verbose: bool, data_file: Optional[str] = None) -> None:
+    """Handle the 'nearby' geospatial command."""
+    try:
+        result = get_nearby_pincodes(pincode, radius_km, limit)
+        
+        if not result:
+            print(f"No pincodes found within {radius_km}km of {pincode}")
+            return
+        
+        title = f"Pincodes within {radius_km}km of {pincode} ({len(result)} found)"
+        output_result(result, json_output, verbose, title)
+    
+    except Exception as e:
+        raise e
+
+
+def handle_nearest_command(latitude: float, longitude: float, limit: int, json_output: bool, verbose: bool) -> None:
+    """Handle the 'nearest' geospatial command."""
+    try:
+        result = get_nearest_pincodes(latitude, longitude, limit)
+        
+        if not result:
+            print(f"No pincodes found near coordinates ({latitude}, {longitude})")
+            return
+        
+        title = f"Nearest pincodes to ({latitude}, {longitude}) ({len(result)} found)"
+        output_result(result, json_output, verbose, title)
     
     except Exception as e:
         raise e

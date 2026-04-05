@@ -39,6 +39,12 @@ from .batch import (
     batch_get_states,
     async_batch_get_states
 )
+from .geospatial import (
+    GeospatialData,
+    get_nearby_pincodes,
+    get_nearest_pincodes,
+    get_pincode_coordinates,
+)
 from .exceptions import (
     PininError,
     InvalidPincodeError,
@@ -47,7 +53,7 @@ from .exceptions import (
     SummaryError
 )
 
-__version__ = "0.1.15"
+__version__ = "0.1.16"
 __author__ = "Raja CSP Raman"
 __email__ = "raja.csp@gmail.com"
 
